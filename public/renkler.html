@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lufie · Renk / Numara Kırılımı</title>
+  <style>
+    :root {
+      --bg: #0e1116; --surface: #171b22; --surface-2: #1e242d; --border: #2a313c;
+      --ink: #f2f5f9; --ink-2: #aeb7c4; --ink-3: #6b7482;
+      --accent: #4c9ffe; --good: #3fb27f; --warning: #e0a642; --critical: #e5544b;
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--ink); font-family: var(--font);
+      padding: clamp(16px, 2vw, 32px); min-height: 100vh; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    header { display: flex; align-items: baseline; justify-content: space-between;
+      flex-wrap: wrap; gap: 12px; margin-bottom: clamp(16px, 2vw, 24px); }
+    header h1 { font-size: clamp(20px, 2.4vw, 30px); letter-spacing: -0.02em; }
+    header h1 span { color: var(--accent); }
+    .back { font-size: 15px; font-weight: 600; }
+
+    .controls { background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+      padding: 14px 16px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+      margin-bottom: clamp(16px, 2vw, 22px); }
+    .controls label { color: var(--ink-3); font-size: 12px; text-transform: uppercase;
+      letter-spacing: 0.05em; font-weight: 600; margin-right: 6px; }
+    .controls input[type=date] { background: var(--surface-2); border: 1px solid var(--border);
+      color: var(--ink); border-radius: 8px; padding: 8px 10px; font: inherit; font-size: 14px;
+      color-scheme: dark; }
+    .btn { background: var(--accent); color: #fff; border: none; border-radius: 8px;
+      padding: 9px 16px; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
+    .btn:hover { filter: brightness(1.08); }
+    .quick { display: inline-flex; gap: 4px; background: var(--surface-2);
+      border: 1px solid var(--border); border-radius: 10px; padding: 3px; }
+    .quick button { background: none; border: none; color: var(--ink-2); font: inherit;
+      font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 7px; cursor: pointer; }
+    .quick button:hover { color: var(--ink); }
+    .summary { margin-left: auto; text-align: right; }
+    .summary .big { font-size: clamp(22px, 2.4vw, 30px); font-weight: 800;
+      font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+    .summary .sub { color: var(--ink-3); font-size: 13px; }
+    .summary .sub b { color: var(--ink-2); }
+
+    .notice { background: rgba(224,166,66,.1); border: 1px solid rgba(224,166,66,.3);
+      color: var(--warning); border-radius: 12px; padding: 12px 16px; margin-bottom: 16px; font-size: 14px; }
+    .err { background: rgba(229,84,75,.1); border: 1px solid rgba(229,84,75,.3);
+      color: var(--critical); border-radius: 12px; padding: 12px 16px; margin-bottom: 16px; font-size: 14px; }
+
+    .group { margin-bottom: clamp(20px, 2.4vw, 30px); }
+    .group > h2 { font-size: clamp(15px, 1.4vw, 19px); margin-bottom: 12px;
+      display: flex; align-items: baseline; gap: 10px; }
+    .group > h2 .gtot { color: var(--ink-3); font-size: 14px; font-weight: 600; }
+
+    .row { background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+      margin-bottom: 8px; overflow: hidden; }
+    .rhead { display: grid; grid-template-columns: 26px 1fr auto; align-items: center;
+      gap: 14px; padding: 14px 16px; cursor: pointer; position: relative; }
+    .rhead:hover { background: var(--surface-2); }
+    .swatch { width: 20px; height: 20px; border-radius: 6px; border: 1px solid rgba(255,255,255,.18); }
+    .rname { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .rname .nm { font-size: clamp(15px, 1.2vw, 17px); font-weight: 600; }
+    .rname .caret { color: var(--ink-3); font-size: 12px; transition: transform .15s; }
+    .row.open .rname .caret { transform: rotate(90deg); }
+    .rmeta { display: flex; align-items: center; gap: 16px; }
+    .rmeta .split { color: var(--ink-3); font-size: 13px; white-space: nowrap; }
+    .rmeta .split b { color: var(--ink-2); font-variant-numeric: tabular-nums; }
+    .rmeta .tot { font-size: clamp(18px, 1.8vw, 24px); font-weight: 800;
+      font-variant-numeric: tabular-nums; min-width: 44px; text-align: right; }
+    /* orana göre ince bar, satırın altına */
+    .rbar { height: 3px; background: var(--accent); opacity: .5; }
+
+    .sizes { display: none; padding: 6px 16px 16px; gap: 8px;
+      grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); }
+    .row.open .sizes { display: grid; }
+    .chip { background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px;
+      padding: 10px; text-align: center; }
+    .chip .sz { color: var(--ink-3); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .03em; }
+    .chip .qt { font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; margin-top: 2px; }
+    .chip .sp { color: var(--ink-3); font-size: 11px; margin-top: 3px; }
+    .empty { color: var(--ink-3); text-align: center; padding: 40px 12px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1><span>Lufie</span> · Renk / Numara Kırılımı</h1>
+    <a class="back" href="/">← Panoya dön</a>
+  </header>
+
+  <div class="controls">
+    <div><label>Başlangıç</label><input type="date" id="from" /></div>
+    <div><label>Bitiş</label><input type="date" id="to" /></div>
+    <button class="btn" id="apply">Uygula</button>
+    <div class="quick" id="quick">
+      <button data-days="0">Bugün</button>
+      <button data-days="6">7 gün</button>
+      <button data-days="29">30 gün</button>
+    </div>
+    <div class="summary">
+      <div class="big" id="sumTotal">—</div>
+      <div class="sub" id="sumSplit"></div>
+    </div>
+  </div>
+
+  <div id="messages"></div>
+  <div id="results"><div class="empty">Yükleniyor…</div></div>
+
+  <script>
+    const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
+
+    // Renk adı → swatch. " Rugan" ekini at, bilinen düz renklere hex, desenlilere gradient.
+    const SW = {
+      'Kırmızı':'#e5544b','Siyah':'#20242b','Bordo':'#7b1e3b','Kahve':'#6b4a2b','Kemik':'#e8dcc8',
+      'Altın':'#d4af37','Gümüş':'#b8bcc4','Gri':'#8a8f98','Saks Mavisi':'#2f5fd0','Açık Mavi':'#7fb0e6',
+      'Yeşil':'#3fb27f','Lila':'#b57edc','Somon':'#f2a9a0','Sarı':'#e0c341',
+    };
+    const PATTERN = {
+      'Leopar':'repeating-linear-gradient(45deg,#c8912f,#c8912f 3px,#5b3d17 3px,#5b3d17 6px)',
+      'Zebra':'repeating-linear-gradient(45deg,#f2f2f2,#f2f2f2 3px,#222 3px,#222 6px)',
+      'Çiçekli':'conic-gradient(#e5544b,#e0c341,#3fb27f,#4c9ffe,#b57edc,#e5544b)',
+      'Kaz Ayağı':'repeating-linear-gradient(45deg,#e8dcc8,#e8dcc8 3px,#3a3f47 3px,#3a3f47 6px)',
+    };
+    function swatchStyle(name) {
+      const base = name.replace(/\s*Rugan$/i, '').trim();
+      if (PATTERN[base]) return `background:${PATTERN[base]}`;
+      if (SW[base]) {
+        const glossy = /Rugan$/i.test(name) ? 'box-shadow:inset 0 3px 4px rgba(255,255,255,.35);' : '';
+        return `background:${SW[base]};${glossy}`;
+      }
+      return 'background:var(--surface-2)';
+    }
+
+    function fmtRange(f, t) { return f === t ? f : `${f} → ${t}`; }
+
+    function render(d) {
+      const box = document.getElementById('results');
+      const msg = document.getElementById('messages');
+      msg.innerHTML = '';
+      if (!d.configured?.trendyol && !d.configured?.shopify)
+        msg.innerHTML += `<div class="notice">Hiçbir kaynak bağlı değil.</div>`;
+      for (const e of (d.errors || [])) msg.innerHTML += `<div class="err">${esc(e)}</div>`;
+
+      document.getElementById('sumTotal').textContent = (d.totals?.units ?? 0) + ' ürün';
+      document.getElementById('sumSplit').innerHTML =
+        `${fmtRange(d.from, d.to)} · Trendyol <b>${d.totals?.trendyol ?? 0}</b> · Shopify <b>${d.totals?.shopify ?? 0}</b>`;
+
+      if (!d.groups?.length || !d.totals?.units) {
+        box.innerHTML = `<div class="empty">Bu aralıkta ürün bulunamadı.</div>`;
+        return;
+      }
+      box.innerHTML = d.groups.map((g) => {
+        const max = Math.max(...g.colors.map((c) => c.total), 1);
+        const rows = g.colors.map((c) => {
+          const bar = Math.round((c.total / max) * 100);
+          const split = (c.byPlatform.trendyol && c.byPlatform.shopify)
+            ? `<span class="split">TY <b>${c.byPlatform.trendyol}</b> · SH <b>${c.byPlatform.shopify}</b></span>` : '';
+          const chips = c.sizes.map((z) => {
+            const sp = (z.byPlatform.trendyol && z.byPlatform.shopify)
+              ? `<div class="sp">TY ${z.byPlatform.trendyol} · SH ${z.byPlatform.shopify}</div>` : '';
+            return `<div class="chip"><div class="sz">${esc(z.size)}</div><div class="qt">${z.qty}</div>${sp}</div>`;
+          }).join('');
+          return `<div class="row">
+            <div class="rhead">
+              <span class="swatch" style="${swatchStyle(c.name)}"></span>
+              <span class="rname"><span class="caret">▶</span><span class="nm">${esc(c.name)}</span></span>
+              <span class="rmeta">${split}<span class="tot">${c.total}</span></span>
+            </div>
+            <div class="rbar" style="width:${bar}%"></div>
+            <div class="sizes">${chips}</div>
+          </div>`;
+        }).join('');
+        return `<div class="group"><h2>${esc(g.title)} <span class="gtot">${g.total} ürün</span></h2>${rows}</div>`;
+      }).join('');
+
+      // aç/kapa
+      box.querySelectorAll('.rhead').forEach((h) =>
+        h.addEventListener('click', () => h.closest('.row').classList.toggle('open')));
+    }
+
+    async function load(from, to) {
+      document.getElementById('results').innerHTML = `<div class="empty">Yükleniyor…</div>`;
+      const q = (from && to) ? `?from=${from}&to=${to}` : '';
+      try {
+        const res = await fetch('/api/colors' + q, { cache: 'no-store' });
+        const d = await res.json();
+        document.getElementById('from').value = d.from;
+        document.getElementById('to').value = d.to;
+        render(d);
+      } catch (e) {
+        document.getElementById('results').innerHTML = `<div class="err">Yüklenemedi: ${esc(e.message)}</div>`;
+      }
+    }
+
+    const ymd = (dt) => dt.toISOString().slice(0, 10);
+    document.getElementById('apply').addEventListener('click', () =>
+      load(document.getElementById('from').value, document.getElementById('to').value));
+    document.getElementById('quick').addEventListener('click', (e) => {
+      const b = e.target.closest('button[data-days]'); if (!b) return;
+      const to = new Date(); const from = new Date(Date.now() - Number(b.dataset.days) * 86400000);
+      load(ymd(from), ymd(to));
+    });
+
+    load(); // ilk yükleme: sunucu varsayılanı (son 7 gün)
+  </script>
+</body>
+</html>

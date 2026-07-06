@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: lufie-imalat-panosu
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: TRENDYOL_SELLER_ID
+        sync: false
+      - key: TRENDYOL_API_KEY
+        sync: false
+      - key: TRENDYOL_API_SECRET
+        sync: false
+      - key: SHOPIFY_SHOP
+        sync: false
+      - key: SHOPIFY_CLIENT_ID
+        sync: false
+      - key: SHOPIFY_CLIENT_SECRET
+        sync: false
+      - key: SITE_PASSWORD
+        sync: false
+      - key: SHOPIFY_URGENT_TAG
+        value: acil
+      - key: DELAY_OFFSET_DAYS
+        value: "0"
+      - key: REFRESH_SECONDS
+        value: "60"

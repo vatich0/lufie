@@ -1,0 +1,6 @@
+node_modules
+.env
+history.json
+*.log
+.git
+.claude
