@@ -180,12 +180,14 @@ export async function getTrendyolMetrics() {
         // Termin ANINDAN önce geçtiyse gecikmiş. (Önceki gün DEĞİL; bugün olup saati
         // geçmiş terminler de gecikmiştir — Trendyol'un "gecikmeye girmiş" ölçütü.)
         overdue: deadline < nowMs,
+        orderedAt: orderTime(o), // düzeltilmiş geliş anı (+3s kayma giderilmiş)
         quantity: totalQty(o),
         customer: [o.customerFirstName, o.customerLastName].filter(Boolean).join(' '),
         items: productLines(o),
       };
     })
-    .sort((a, b) => a.deadline - b.deadline);
+    // En eski sipariş en üstte (en uzun bekleyen = en acil)
+    .sort((a, b) => a.orderedAt - b.orderedAt);
 
   const sumQty = (arr) => arr.reduce((s, o) => s + totalQty(o), 0);
 

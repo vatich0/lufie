@@ -313,7 +313,7 @@
       <h2><span class="htitle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>Gecikmede / Bugün Terminli — Trendyol</span> <span class="count" id="delayCount">0</span></h2>
       <div class="scroll">
         <table>
-          <thead><tr><th>Sipariş</th><th>Durum</th><th>Termin</th><th class="num">Adet</th></tr></thead>
+          <thead><tr><th>Sipariş</th><th>Durum</th><th>Geliş</th><th class="num">Adet</th></tr></thead>
           <tbody id="delayBody"></tbody>
         </table>
       </div>
@@ -353,18 +353,6 @@
     const fmtDeadline = (ts) => {
       if (!ts) return '—';
       return new Date(ts).toLocaleString('tr-TR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Istanbul' });
-    };
-    // Termine kalan / geçen süre (Trendyol "Kalan Süre" gibi)
-    const fmtRemaining = (ts) => {
-      if (!ts) return { text: '—', overdue: false };
-      const diff = ts - Date.now();
-      const overdue = diff < 0;
-      let s = Math.floor(Math.abs(diff) / 1000);
-      const g = Math.floor(s / 86400); s -= g * 86400;
-      const h = Math.floor(s / 3600); s -= h * 3600;
-      const m = Math.floor(s / 60);
-      const dur = g ? `${g}g ${h}s` : h ? `${h}s ${m}dk` : `${m}dk`;
-      return { text: dur + (overdue ? ' geçti' : ' kaldı'), overdue };
     };
     const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
     const nz = (v) => (typeof v === 'number' ? v : 0);
@@ -409,6 +397,8 @@
       const received = units ? nz(t.receivedUnits) : nz(t.receivedToday);
       const shipped = units ? nz(t.shippedUnits) : nz(t.shippedToday);
       const remaining = units ? nz(t.openUnits) : nz(t.openTotal);
+      const openTy = units ? nz(rt.openUnits) : nz(rt.openTotal);
+      const openSh = units ? nz(sh.openUnits) : nz(sh.openTotal);
       const pct = received > 0 ? Math.min(100, Math.round((shipped / received) * 100)) : 0;
       const net = shipped - received;
       const netCls = net >= 0 ? 'pos' : 'neg';
@@ -438,8 +428,9 @@
         <article class="kpi remaining">
           <div class="kpi__top"><span class="kpi__label">Açık · Kargolanmamış</span><span class="kpi__icon">${IC.open}</span></div>
           <div class="kpi__value">${remaining}<span class="kpi__unit">${unit}</span></div>
+          <div class="kpi__note" style="margin-top:12px">Kargolanmamış bekleyen sipariş (Shopify tarafı son 30 gün).</div>
           <div class="kpi__spacer"></div>
-          <div class="kpi__note">Bekleyen tüm Trendyol siparişi (bugün gelenler dahil). Kuyruk trendi için alttaki grafiğe bak.</div>
+          ${splitBar(openTy, openSh)}
         </article>`;
     }
 
@@ -602,16 +593,13 @@
       cnt.textContent = list.length;
       cnt.className = 'count' + (list.some((o) => o.overdue) ? ' alert' : '');
       if (!list.length) { body.innerHTML = `<tr><td colspan="4"><div class="empty">Gecikmede sipariş yok 🎉</div></td></tr>`; return; }
-      body.innerHTML = list.map((o, i) => {
-        const rem = fmtRemaining(o.deadline);
-        return `
+      body.innerHTML = list.map((o, i) => `
         <tr>
           <td><span class="oid">${esc(o.orderNumber)}</span>${o.customer ? `<span class="cust">${esc(o.customer)}</span>` : ''}</td>
           <td><span class="status-pill">${esc(o.status || '—')}</span></td>
-          <td><span class="tag ${rem.overdue ? 'critical' : 'warning'}" title="Termin: ${fmtDeadline(o.deadline)}">${icClock}${rem.text}</span></td>
+          <td><span class="tag ${o.overdue ? 'critical' : 'warning'}" title="Termin: ${fmtDeadline(o.deadline)}">${icClock}${fmtDeadline(o.orderedAt)}</span></td>
           <td class="qty num" data-index="${i}" title="Ürün detayını gör"><span class="q"><span class="qn">${o.quantity || 0}</span>${boxIcon}</span></td>
-        </tr>`;
-      }).join('');
+        </tr>`).join('');
     }
 
     // ---------- Acil tablosu ----------

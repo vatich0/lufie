@@ -117,8 +117,8 @@ async function buildDashboard() {
     receivedUnits: (rt.receivedUnits || 0) + (sh.receivedUnits || 0),
     shippedToday: (rt.shippedToday || 0) + (sh.shippedToday || 0),
     shippedUnits: (rt.shippedUnits || 0) + (sh.shippedUnits || 0),
-    openTotal: rt.openTotal || 0,
-    openUnits: rt.openUnits || 0,
+    openTotal: (rt.openTotal || 0) + (sh.openTotal || 0),
+    openUnits: (rt.openUnits || 0) + (sh.openUnits || 0),
   };
 
   // Günlük geçmişi güncelle: bugünün tam snapshot'ı + geçmiş "gelen"in geç-doldurulması.

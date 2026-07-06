@@ -134,15 +134,24 @@ export async function getShopifyMetrics() {
     }
   }
 
-  // 3) "acil" etiketli, henüz kargolanmamış açık siparişler
+  // 3) Kargolanmamış (unfulfilled) açık siparişler — SON 30 GÜN.
+  //    Hem toplam açık kuyruğu (sipariş + ürün) sayarız, hem "acil" etiketlileri listeleriz.
+  //    (Daha eski takılı siparişlere bakmaya gerek yok.)
+  const openSinceISO = istanbulDayStart(addDays(now, -30)).toISOString();
   const urgent = [];
+  let openOrders = 0;
+  let openUnits = 0;
   let path =
-    `/orders.json?status=open&fulfillment_status=unfulfilled&limit=250&fields=id,name,created_at,tags,note,shipping_address,line_items`;
+    `/orders.json?status=open&fulfillment_status=unfulfilled&created_at_min=${encodeURIComponent(openSinceISO)}&limit=250&fields=id,name,created_at,cancelled_at,tags,note,shipping_address,line_items`;
   let guard = 0;
-  while (path && guard < 10) {
+  while (path && guard < 20) {
     const res = await shopifyGet(path);
     const orders = (await res.json()).orders || [];
     for (const o of orders) {
+      if (o.cancelled_at) continue;
+      openOrders += 1;
+      // iade sonrası kalan adet (current_quantity yoksa quantity)
+      openUnits += (o.line_items || []).reduce((sum, l) => sum + ((l.current_quantity != null ? l.current_quantity : l.quantity) || 0), 0);
       const tags = (o.tags || '').split(',').map((x) => x.trim().toLowerCase());
       if (tags.includes(s.urgentTag)) {
         urgent.push({
@@ -154,22 +163,22 @@ export async function getShopifyMetrics() {
             name: l.title || l.name || '—',
             variant: l.variant_title || '',
             sku: l.sku || '',
-            quantity: l.quantity || 0,
+            quantity: (l.current_quantity != null ? l.current_quantity : l.quantity) || 0,
           })),
         });
       }
     }
-    // Cursor sayfalamada (page_info) status/fulfillment_status gönderilemez;
+    // Cursor sayfalamada (page_info) status/fulfillment_status/created_at gönderilemez;
     // yalnızca limit + fields taşınabilir.
     const info = nextPageInfo(res);
     path = info
-      ? `/orders.json?limit=250&fields=id,name,created_at,tags,note,shipping_address,line_items&page_info=${info}`
+      ? `/orders.json?limit=250&fields=id,name,created_at,cancelled_at,tags,note,shipping_address,line_items&page_info=${info}`
       : null;
     guard += 1;
   }
   urgent.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
 
-  return { receivedToday, receivedUnits, receivedByDay, shippedToday, shippedUnits, urgent };
+  return { receivedToday, receivedUnits, receivedByDay, shippedToday, shippedUnits, openTotal: openOrders, openUnits, urgent };
 }
 
 // Belirli tarih aralığında (created_at) gelen siparişlerin ürün satırlarını döndürür.
