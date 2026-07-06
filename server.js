@@ -10,6 +10,7 @@ import { consolidateByColor } from './colors.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
+app.set('trust proxy', 1); // Railway/Render gibi proxy arkasında doğru davranış
 
 // --- Basit şifre kapısı ---------------------------------------------------
 // Şifre config.sitePassword (env SITE_PASSWORD, varsayılan "lufie"). Doğru şifre
