@@ -6,207 +6,321 @@
   <title>Lufie · İmalat Sipariş Panosu</title>
   <style>
     :root {
-      --bg: #0e1116;
-      --surface: #171b22;
-      --surface-2: #1e242d;
-      --border: #2a313c;
-      --ink: #f2f5f9;
-      --ink-2: #aeb7c4;
-      --ink-3: #6b7482;
-      --accent: #4c9ffe;
-      --good: #3fb27f;
-      --warning: #e0a642;
-      --critical: #e5544b;
-      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --bg: #090c11;
+      --bg-glow-1: rgba(79,157,255,.08);
+      --bg-glow-2: rgba(53,192,138,.05);
+      --surface: #14181f;
+      --surface-hi: #171c24;
+      --surface-2: #1b212b;
+      --border: #232a34;
+      --border-hi: #2f3742;
+      --ink: #f5f8fc;
+      --ink-2: #a9b3c1;
+      --ink-3: #69727f;
+      --accent: #4f9dff;
+      --good: #35c08a;
+      --warning: #eab04a;
+      --critical: #f0574d;
+      --ty: #f7913c;   /* Trendyol */
+      --sh: #57c15f;   /* Shopify */
+      --radius: 18px;
+      --radius-sm: 12px;
+      --shadow: 0 10px 30px -16px rgba(0,0,0,.7), 0 1px 0 rgba(255,255,255,.04) inset;
+      --font: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+      --num: "Segoe UI", var(--font);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { -webkit-text-size-adjust: 100%; }
     body {
       background: var(--bg); color: var(--ink); font-family: var(--font);
-      padding: clamp(16px, 2vw, 32px); min-height: 100vh;
+      padding: clamp(16px, 2vw, 34px); min-height: 100vh;
+      -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+      background-image:
+        radial-gradient(1100px 620px at 8% -8%, var(--bg-glow-1), transparent 60%),
+        radial-gradient(1000px 560px at 108% 6%, var(--bg-glow-2), transparent 55%);
+      background-attachment: fixed;
     }
-    header {
-      display: flex; align-items: baseline; justify-content: space-between;
-      flex-wrap: wrap; gap: 12px; margin-bottom: clamp(16px, 2vw, 28px);
-    }
-    header h1 { font-size: clamp(20px, 2.4vw, 30px); letter-spacing: -0.02em; }
+    ::selection { background: rgba(79,157,255,.28); }
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
+    ::-webkit-scrollbar-thumb { background: var(--border-hi); border-radius: 999px; border: 2px solid transparent; background-clip: padding-box; }
+    ::-webkit-scrollbar-thumb:hover { background: #3b4552; background-clip: padding-box; }
+    b { font-weight: 700; }
+
+    @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+    @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(53,192,138,.5); } 50% { box-shadow: 0 0 0 5px rgba(53,192,138,0); } }
+    @keyframes shimmer { 100% { background-position: 200% 0; } }
+    .anim { opacity: 0; animation: rise .5s cubic-bezier(.2,.7,.2,1) forwards; }
+
+    /* ---------- Header ---------- */
+    header { display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 14px; margin-bottom: clamp(18px, 2vw, 26px); }
+    .brand { display: flex; align-items: center; gap: 13px; min-width: 0; }
+    .brand__mark { width: 40px; height: 40px; border-radius: 11px; flex: none;
+      background: linear-gradient(145deg, #4f9dff, #2f6fd0); color: #fff;
+      display: grid; place-items: center; box-shadow: 0 6px 18px -8px rgba(79,157,255,.7); }
+    .brand__mark svg { width: 22px; height: 22px; }
+    header h1 { font-size: clamp(19px, 2vw, 27px); font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; }
     header h1 span { color: var(--accent); }
-    .meta { color: var(--ink-3); font-size: 14px; text-align: right; }
-    .meta .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%;
-      background: var(--good); margin-right: 6px; vertical-align: middle; }
-    .meta .dot.stale { background: var(--warning); }
+    header h1 small { display: block; font-size: 12px; font-weight: 600; color: var(--ink-3);
+      letter-spacing: .04em; text-transform: uppercase; margin-top: 2px; }
+    .meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+    .pill { display: inline-flex; align-items: center; gap: 8px; background: var(--surface);
+      border: 1px solid var(--border); border-radius: 999px; padding: 8px 14px; font-size: 13px;
+      color: var(--ink-2); font-variant-numeric: tabular-nums; box-shadow: var(--shadow); }
+    .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--good); flex: none;
+      animation: pulse 2.4s infinite; }
+    .dot.stale { background: var(--warning); animation: none; }
+    .clock { font-weight: 600; color: var(--ink); }
 
-    .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: clamp(12px, 1.4vw, 20px); margin-bottom: clamp(16px, 2vw, 28px); }
-    .kpi { background: var(--surface); border: 1px solid var(--border);
-      border-radius: 16px; padding: clamp(18px, 1.8vw, 28px); position: relative; overflow: hidden; }
-    .kpi .label { color: var(--ink-2); font-size: clamp(13px, 1vw, 15px);
-      text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
-    .kpi .value { font-size: clamp(48px, 7vw, 96px); font-weight: 800; line-height: 1;
-      margin: 10px 0 4px; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
-    .kpi .sub { color: var(--ink-3); font-size: clamp(13px, 1vw, 15px); }
-    .kpi .breakdown { display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; }
-    .kpi .breakdown span { color: var(--ink-2); font-size: clamp(12px, 0.9vw, 14px); }
-    .kpi .breakdown b { color: var(--ink); font-variant-numeric: tabular-nums; }
-    .kpi.accent .value { color: var(--accent); }
-    .kpi.good .value { color: var(--good); }
-    .kpi.remaining .value { color: var(--warning); }
-    .kpi .value .vunit { font-size: clamp(13px, 1vw, 16px); font-weight: 600;
-      color: var(--ink-3); margin-left: 8px; letter-spacing: 0; }
+    /* ---------- Messages ---------- */
+    #messages:not(:empty) { margin-bottom: 14px; display: grid; gap: 8px; }
+    .banner { display: flex; align-items: center; gap: 10px; border-radius: var(--radius-sm);
+      padding: 11px 15px; font-size: 13.5px; border: 1px solid; line-height: 1.4; }
+    .banner svg { width: 17px; height: 17px; flex: none; }
+    .banner.notice { background: rgba(234,176,74,.08); border-color: rgba(234,176,74,.28); color: #f0c274; }
+    .banner.err { background: rgba(240,87,77,.08); border-color: rgba(240,87,77,.28); color: #f3897f; }
 
-    /* sipariş / ürün adedi şalteri */
+    /* ---------- Metric bar ---------- */
     .metricbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-      margin-bottom: clamp(12px, 1.4vw, 18px); }
-    .metricbar .mlabel { color: var(--ink-3); font-size: 12px; text-transform: uppercase;
-      letter-spacing: 0.06em; font-weight: 600; }
-    .seg { display: inline-flex; background: var(--surface-2); border: 1px solid var(--border);
-      border-radius: 10px; padding: 3px; gap: 2px; }
+      margin-bottom: clamp(14px, 1.6vw, 20px); }
+    .mlabel { color: var(--ink-3); font-size: 11.5px; text-transform: uppercase;
+      letter-spacing: .08em; font-weight: 700; }
+    .seg { display: inline-flex; background: var(--surface); border: 1px solid var(--border);
+      border-radius: 11px; padding: 4px; gap: 3px; box-shadow: var(--shadow); }
     .seg button { background: none; border: none; color: var(--ink-2); font: inherit;
-      font-size: 14px; font-weight: 600; padding: 7px 16px; border-radius: 8px; cursor: pointer; }
-    .seg button.active { background: var(--accent); color: #fff; }
-    .seg button:not(.active):hover { color: var(--ink); }
-    .metricbar .navlink { margin-left: auto; color: var(--accent); text-decoration: none;
-      font-size: 14px; font-weight: 700; background: var(--surface); border: 1px solid var(--border);
-      padding: 9px 14px; border-radius: 10px; white-space: nowrap; }
-    .metricbar .navlink:hover { background: var(--surface-2); }
+      font-size: 13.5px; font-weight: 600; padding: 8px 16px; border-radius: 8px; cursor: pointer;
+      transition: color .15s, background .15s; }
+    .seg button.active { background: linear-gradient(145deg, #4f9dff, #2f74d6); color: #fff;
+      box-shadow: 0 4px 12px -5px rgba(79,157,255,.6); }
+    .seg button:not(.active):hover { color: var(--ink); background: var(--surface-2); }
+    .navlink { margin-left: auto; color: var(--ink); text-decoration: none; display: inline-flex;
+      align-items: center; gap: 8px; font-size: 13.5px; font-weight: 700; background: var(--surface);
+      border: 1px solid var(--border); padding: 10px 16px; border-radius: 11px; white-space: nowrap;
+      box-shadow: var(--shadow); transition: border-color .15s, transform .15s; }
+    .navlink:hover { border-color: var(--accent); transform: translateY(-1px); }
+    .navlink svg { width: 16px; height: 16px; color: var(--accent); }
 
-    /* günlük hız barı */
-    .bar { height: 10px; border-radius: 999px; background: var(--surface-2);
-      overflow: hidden; margin-top: 14px; }
-    .bar > i { display: block; height: 100%; background: var(--good); border-radius: 999px;
-      transition: width .6s ease; }
+    /* ---------- Cards / surfaces ---------- */
+    .card { background: linear-gradient(180deg, var(--surface-hi), var(--surface));
+      border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
 
-    .panels { display: grid; grid-template-columns: 1fr; gap: clamp(16px, 2vw, 24px); }
-    @media (min-width: 1100px) { .panels { grid-template-columns: 1fr 1fr; } }
-    .panel { background: var(--surface); border: 1px solid var(--border);
-      border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; }
-    .panel > h2 { font-size: clamp(15px, 1.3vw, 19px); padding: 16px 20px;
+    .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: clamp(14px, 1.5vw, 20px); margin-bottom: clamp(16px, 2vw, 24px); }
+    .kpi { position: relative; overflow: hidden; padding: clamp(20px, 1.9vw, 26px);
+      display: flex; flex-direction: column; --c: var(--accent);
+      background: linear-gradient(180deg, var(--surface-hi), var(--surface));
+      border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow);
+      transition: transform .18s, border-color .18s; }
+    .kpi::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 3px;
+      background: linear-gradient(90deg, var(--c), transparent 75%); opacity: .9; }
+    .kpi::after { content: ""; position: absolute; right: -40px; top: -50px; width: 180px; height: 180px;
+      background: radial-gradient(circle, color-mix(in srgb, var(--c), transparent 82%), transparent 70%); }
+    .kpi:hover { transform: translateY(-2px); border-color: var(--border-hi); }
+    .kpi.accent { --c: var(--accent); }
+    .kpi.good { --c: var(--good); }
+    .kpi.remaining { --c: var(--warning); }
+    .kpi__top { display: flex; align-items: center; justify-content: space-between; gap: 10px; position: relative; }
+    .kpi__label { color: var(--ink-2); font-size: 12.5px; text-transform: uppercase;
+      letter-spacing: .07em; font-weight: 700; }
+    .kpi__icon { width: 34px; height: 34px; border-radius: 10px; flex: none; display: grid; place-items: center;
+      color: var(--c); background: color-mix(in srgb, var(--c), transparent 86%);
+      border: 1px solid color-mix(in srgb, var(--c), transparent 72%); }
+    .kpi__icon svg { width: 18px; height: 18px; }
+    .kpi__value { font-family: var(--num); font-size: clamp(46px, 6.4vw, 84px); font-weight: 800; line-height: .96;
+      letter-spacing: -.035em; font-variant-numeric: tabular-nums; margin: 14px 0 0; color: var(--c);
+      display: flex; align-items: baseline; gap: 10px; }
+    .kpi__unit { font-size: clamp(13px, 1vw, 15px); font-weight: 700; color: var(--ink-3);
+      letter-spacing: 0; text-transform: lowercase; }
+    .kpi__spacer { flex: 1; min-height: 14px; }
+
+    /* split (platform kırılımı) */
+    .split { margin-top: 16px; }
+    .split__bar { display: flex; height: 8px; border-radius: 999px; overflow: hidden;
+      background: var(--surface-2); gap: 2px; }
+    .split__bar i { display: block; height: 100%; border-radius: 999px; transition: width .6s cubic-bezier(.2,.7,.2,1); }
+    .split__leg { display: flex; gap: 18px; margin-top: 11px; flex-wrap: wrap; }
+    .split__leg span { display: inline-flex; align-items: center; gap: 7px; color: var(--ink-2); font-size: 13px; }
+    .split__leg i { width: 9px; height: 9px; border-radius: 3px; }
+    .split__leg b { color: var(--ink); font-variant-numeric: tabular-nums; }
+
+    /* progress + net (kargolanan kartı) */
+    .prog { margin-top: 16px; }
+    .prog__bar { height: 9px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+    .prog__bar i { display: block; height: 100%; border-radius: 999px;
+      background: linear-gradient(90deg, var(--good), #5fd6a6); transition: width .6s cubic-bezier(.2,.7,.2,1); }
+    .prog__foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; }
+    .prog__foot .txt { color: var(--ink-3); font-size: 13px; }
+    .prog__foot .txt b { color: var(--ink-2); }
+    .netchip { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; font-weight: 800;
+      padding: 4px 10px; border-radius: 999px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .netchip.pos { background: color-mix(in srgb, var(--good), transparent 86%); color: var(--good); }
+    .netchip.neg { background: color-mix(in srgb, var(--critical), transparent 86%); color: var(--critical); }
+    .kpi__note { color: var(--ink-3); font-size: 13px; margin-top: 16px; line-height: 1.45; }
+
+    /* skeleton */
+    .skel { position: relative; overflow: hidden; }
+    .sk { border-radius: 8px; background: var(--surface-2); }
+    .sk::after { content: ""; position: absolute; inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.05), transparent);
+      background-size: 200% 100%; animation: shimmer 1.4s infinite; }
+
+    /* ---------- Panels (charts + tables) ---------- */
+    .charts { display: grid; grid-template-columns: 1fr; gap: clamp(14px, 1.6vw, 20px); margin-bottom: clamp(14px, 1.6vw, 20px); }
+    .panels { display: grid; grid-template-columns: 1fr; gap: clamp(14px, 1.6vw, 20px); }
+    @media (min-width: 1080px) { .charts, .panels { grid-template-columns: 1fr 1fr; } }
+    .panel { overflow: hidden; display: flex; flex-direction: column;
+      background: linear-gradient(180deg, var(--surface-hi), var(--surface));
+      border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
+    .panel > h2 { font-size: clamp(14px, 1.2vw, 17px); font-weight: 700; padding: 16px 20px;
       border-bottom: 1px solid var(--border); display: flex; align-items: center;
-      justify-content: space-between; gap: 10px; }
-    .panel > h2 .count { background: var(--surface-2); color: var(--ink-2);
-      font-size: 14px; padding: 3px 12px; border-radius: 999px; font-weight: 700; }
-    .panel > h2 .count.alert { background: rgba(229,84,75,.15); color: var(--critical); }
-    .scroll { overflow-x: auto; }
+      justify-content: space-between; gap: 10px; letter-spacing: -.01em; }
+    .panel > h2 .htitle { display: inline-flex; align-items: center; gap: 9px; }
+    .panel > h2 .htitle svg { width: 17px; height: 17px; color: var(--ink-3); }
+    .count { background: var(--surface-2); color: var(--ink-2); font-size: 13px; padding: 4px 12px;
+      border-radius: 999px; font-weight: 700; font-variant-numeric: tabular-nums; border: 1px solid var(--border); }
+    .count.alert { background: color-mix(in srgb, var(--critical), transparent 86%);
+      color: var(--critical); border-color: color-mix(in srgb, var(--critical), transparent 70%); }
+    .legend { font-size: 12.5px; font-weight: 600; color: var(--ink-2); display: inline-flex; align-items: center; gap: 7px; }
+    .legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+    .legend i.lg-recv { background: var(--accent); }
+    .legend i.lg-ship { background: var(--good); }
+    .legend .sep { width: 6px; }
+    .chartwrap { padding: 16px 18px 12px; }
+    .chartwrap svg { width: 100%; height: auto; display: block; }
+    .chart-note { color: var(--ink-3); font-size: 12.5px; text-align: center; padding: 34px 12px; line-height: 1.5; }
+
+    /* ---------- Tables ---------- */
+    .scroll { overflow: auto; max-height: 560px; }
     table { width: 100%; border-collapse: collapse; }
-    th, td { text-align: left; padding: 12px 16px; font-size: clamp(13px, 1vw, 16px);
-      border-bottom: 1px solid var(--border); white-space: nowrap; }
-    th { color: var(--ink-3); font-size: 12px; text-transform: uppercase;
-      letter-spacing: 0.05em; position: sticky; top: 0; background: var(--surface); }
+    th, td { text-align: left; padding: 13px 18px; font-size: clamp(13px, 1vw, 15px); white-space: nowrap; }
+    thead th { color: var(--ink-3); font-size: 11px; text-transform: uppercase; letter-spacing: .06em;
+      font-weight: 700; position: sticky; top: 0; z-index: 1; background: var(--surface-hi);
+      border-bottom: 1px solid var(--border); }
+    tbody td { border-bottom: 1px solid color-mix(in srgb, var(--border), transparent 40%); }
+    tbody tr { transition: background .12s; }
+    tbody tr:hover td { background: rgba(255,255,255,.022); }
     tbody tr:last-child td { border-bottom: none; }
     td.num { font-variant-numeric: tabular-nums; text-align: right; }
-    .tag { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px;
-      border-radius: 999px; font-size: 12px; font-weight: 700; }
-    .tag.critical { background: rgba(229,84,75,.15); color: var(--critical); }
-    .tag.warning { background: rgba(224,166,66,.15); color: var(--warning); }
-    .tag.acil { background: rgba(229,84,75,.15); color: var(--critical); }
-    .empty { padding: 28px 20px; color: var(--ink-3); text-align: center; }
-    .notice { background: rgba(224,166,66,.1); border: 1px solid rgba(224,166,66,.3);
-      color: var(--warning); border-radius: 12px; padding: 12px 16px; margin-bottom: 16px; font-size: 14px; }
-    .err { background: rgba(229,84,75,.1); border: 1px solid rgba(229,84,75,.3);
-      color: var(--critical); border-radius: 12px; padding: 12px 16px; margin-bottom: 16px; font-size: 14px; }
+    .oid { font-weight: 600; font-variant-numeric: tabular-nums; }
+    .cust { display: block; color: var(--ink-3); font-size: clamp(11px, .85vw, 12.5px); margin-top: 3px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
+    .status-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-2);
+      background: var(--surface-2); border: 1px solid var(--border); padding: 3px 9px; border-radius: 999px; }
+    .tag { display: inline-flex; align-items: center; gap: 6px; padding: 4px 11px; border-radius: 999px;
+      font-size: 12px; font-weight: 700; letter-spacing: .01em; }
+    .tag svg { width: 12px; height: 12px; }
+    .tag.critical { background: color-mix(in srgb, var(--critical), transparent 86%); color: var(--critical); }
+    .tag.warning { background: color-mix(in srgb, var(--warning), transparent 85%); color: #f0bd63; }
+    .tag.acil { background: color-mix(in srgb, var(--critical), transparent 84%); color: var(--critical);
+      box-shadow: 0 0 0 1px color-mix(in srgb, var(--critical), transparent 70%) inset; }
+    .empty { padding: 40px 20px; color: var(--ink-3); text-align: center; font-size: 14px; }
 
-    /* müşteri adı (sipariş no altında) */
-    td .cust { display: block; color: var(--ink-3); font-size: clamp(11px, 0.85vw, 13px);
-      margin-top: 3px; white-space: nowrap; }
-    /* tıklanabilir adet hücresi */
     td.qty { cursor: pointer; }
-    td.qty .q { display: inline-flex; align-items: center; gap: 6px; justify-content: flex-end;
-      font-variant-numeric: tabular-nums; border-bottom: 1px dashed var(--ink-3); padding-bottom: 1px; }
-    td.qty:hover .q { color: var(--accent); border-color: var(--accent); }
-    td.qty .q svg { width: 14px; height: 14px; opacity: .7; }
-    /* acil tablosundaki ürün detay butonu */
+    td.qty .q { display: inline-flex; align-items: center; gap: 7px; justify-content: flex-end;
+      font-variant-numeric: tabular-nums; font-weight: 700; }
+    td.qty .q .qn { border-bottom: 1px dashed var(--ink-3); padding-bottom: 1px; transition: color .12s, border-color .12s; }
+    td.qty .q svg { width: 14px; height: 14px; opacity: .55; transition: opacity .12s; }
+    td.qty:hover .q .qn { color: var(--accent); border-color: var(--accent); }
+    td.qty:hover .q svg { opacity: 1; color: var(--accent); }
     .prodbtn { background: none; border: none; color: var(--ink-3); cursor: pointer;
-      padding: 2px 4px; margin-left: 6px; vertical-align: middle; border-radius: 6px; line-height: 0; }
+      padding: 3px 5px; margin-left: 8px; vertical-align: middle; border-radius: 7px; line-height: 0; transition: color .12s, background .12s; }
     .prodbtn svg { width: 15px; height: 15px; }
     .prodbtn:hover { color: var(--accent); background: var(--surface-2); }
 
-    /* alt grafikler */
-    .charts { display: grid; grid-template-columns: 1fr; gap: clamp(16px, 2vw, 24px);
-      margin-top: clamp(16px, 2vw, 24px); }
-    @media (min-width: 1100px) { .charts { grid-template-columns: 1fr 1fr; } }
-    .chartwrap { padding: 14px 16px 10px; }
-    .chartwrap svg { width: 100%; height: auto; display: block; }
-    .legend { font-size: 13px; font-weight: 500; color: var(--ink-2);
-      display: inline-flex; align-items: center; gap: 6px; }
-    .legend i { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
-    .legend i.lg-recv { background: var(--accent); }
-    .legend i.lg-ship { background: var(--good); }
-    .legend .sep { width: 8px; }
-    .chart-note { color: var(--ink-3); font-size: 13px; text-align: center; padding: 30px 12px; }
+    /* ---------- Tooltip ---------- */
+    .tip { position: fixed; z-index: 80; pointer-events: none; transform: translate(-50%, -100%);
+      background: #0d1117; border: 1px solid var(--border-hi); border-radius: 10px; padding: 8px 11px;
+      font-size: 12.5px; color: var(--ink); box-shadow: 0 12px 30px -10px rgba(0,0,0,.8); white-space: nowrap; }
+    .tip[hidden] { display: none; }
+    .tip .tt { color: var(--ink-3); font-size: 11px; margin-bottom: 3px; }
+    .tip .tr { display: flex; align-items: center; gap: 7px; }
+    .tip .tr i { width: 8px; height: 8px; border-radius: 2px; }
+    .tip b { font-variant-numeric: tabular-nums; }
 
-    /* ürün detay pop-up'ı */
-    .modal-back { position: fixed; inset: 0; background: rgba(0,0,0,.6); backdrop-filter: blur(2px);
-      display: none; align-items: center; justify-content: center; padding: 20px; z-index: 50; }
+    /* ---------- Modal ---------- */
+    @keyframes pop { from { opacity: 0; transform: translateY(12px) scale(.98); } to { opacity: 1; transform: none; } }
+    .modal-back { position: fixed; inset: 0; background: rgba(6,8,12,.62); backdrop-filter: blur(4px);
+      display: none; align-items: center; justify-content: center; padding: 20px; z-index: 90; }
     .modal-back.open { display: flex; }
-    .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
-      width: min(560px, 100%); max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; }
+    .modal { background: linear-gradient(180deg, var(--surface-hi), var(--surface));
+      border: 1px solid var(--border-hi); border-radius: var(--radius); width: min(560px, 100%);
+      max-height: 85vh; display: flex; flex-direction: column; overflow: hidden;
+      box-shadow: 0 30px 80px -20px rgba(0,0,0,.8); animation: pop .22s cubic-bezier(.2,.7,.2,1); }
     .modal .mhead { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
-      padding: 18px 20px; border-bottom: 1px solid var(--border); }
-    .modal .mhead h3 { font-size: 17px; letter-spacing: -0.01em; }
-    .modal .mhead .msub { color: var(--ink-3); font-size: 13px; margin-top: 4px; }
+      padding: 20px 22px; border-bottom: 1px solid var(--border); }
+    .modal .mhead h3 { font-size: 18px; font-weight: 700; letter-spacing: -.01em; }
+    .modal .mhead .msub { color: var(--ink-3); font-size: 13px; margin-top: 5px; }
     .modal .mclose { background: var(--surface-2); border: 1px solid var(--border); color: var(--ink-2);
-      width: 32px; height: 32px; border-radius: 8px; font-size: 18px; line-height: 1; cursor: pointer; flex: none; }
-    .modal .mclose:hover { color: var(--ink); }
+      width: 34px; height: 34px; border-radius: 9px; font-size: 19px; line-height: 1; cursor: pointer; flex: none;
+      transition: color .12s, border-color .12s; }
+    .modal .mclose:hover { color: var(--ink); border-color: var(--border-hi); }
     .modal .mbody { overflow-y: auto; }
-    .modal .item { display: flex; align-items: center; gap: 14px; padding: 14px 20px;
-      border-bottom: 1px solid var(--border); }
+    .modal .item { display: flex; align-items: center; gap: 15px; padding: 15px 22px; border-bottom: 1px solid var(--border); }
     .modal .item:last-child { border-bottom: none; }
-    .modal .item .qbadge { flex: none; min-width: 40px; height: 40px; padding: 0 10px; border-radius: 10px;
-      background: var(--surface-2); color: var(--ink); font-weight: 800; font-size: 17px;
-      display: flex; align-items: center; justify-content: center; font-variant-numeric: tabular-nums; }
+    .modal .item .qbadge { flex: none; min-width: 42px; height: 42px; padding: 0 11px; border-radius: 11px;
+      background: color-mix(in srgb, var(--accent), transparent 86%); color: var(--accent); font-weight: 800; font-size: 17px;
+      display: flex; align-items: center; justify-content: center; font-variant-numeric: tabular-nums;
+      border: 1px solid color-mix(in srgb, var(--accent), transparent 74%); }
     .modal .item .pname { font-size: 15px; font-weight: 600; }
-    .modal .item .pmeta { color: var(--ink-3); font-size: 13px; margin-top: 3px;
-      display: flex; gap: 12px; flex-wrap: wrap; }
+    .modal .item .pmeta { color: var(--ink-3); font-size: 13px; margin-top: 4px; display: flex; gap: 14px; flex-wrap: wrap; }
     .modal .item .pmeta b { color: var(--ink-2); font-weight: 600; }
   </style>
 </head>
 <body>
-  <header>
-    <h1><span>Lufie</span> · İmalat Sipariş Panosu</h1>
+  <header class="anim">
+    <div class="brand">
+      <span class="brand__mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></span>
+      <h1><span>Lufie</span> İmalat Panosu<small>Sipariş & Kargo Durumu</small></h1>
+    </div>
     <div class="meta">
-      <div><span class="dot" id="statusDot"></span><span id="updated">yükleniyor…</span></div>
-      <div id="clock"></div>
+      <div class="pill"><span class="dot" id="statusDot"></span><span id="updated">yükleniyor…</span></div>
+      <div class="pill"><span class="clock" id="clock"></span></div>
     </div>
   </header>
 
   <div id="messages"></div>
 
-  <div class="metricbar">
+  <div class="metricbar anim" style="animation-delay:.05s">
     <span class="mlabel">Gösterim</span>
     <div class="seg" id="metricToggle">
       <button type="button" data-mode="orders">Sipariş adedi</button>
       <button type="button" data-mode="units" class="active">Ürün adedi</button>
     </div>
-    <a class="navlink" href="/renkler">🎨 Renk / Numara Kırılımı →</a>
+    <a class="navlink" href="/renkler"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.555C21.965 6.012 17.461 2 12 2z"/></svg>Renk / Numara Kırılımı</a>
   </div>
 
-  <section class="kpis" id="kpis"></section>
+  <section class="kpis anim" id="kpis" style="animation-delay:.1s">
+    <div class="kpi accent skel"><div class="sk" style="height:14px;width:45%"></div><div class="sk" style="height:64px;width:60%;margin-top:20px"></div><div class="sk" style="height:8px;margin-top:24px"></div></div>
+    <div class="kpi good skel"><div class="sk" style="height:14px;width:55%"></div><div class="sk" style="height:64px;width:50%;margin-top:20px"></div><div class="sk" style="height:8px;margin-top:24px"></div></div>
+    <div class="kpi remaining skel"><div class="sk" style="height:14px;width:50%"></div><div class="sk" style="height:64px;width:45%;margin-top:20px"></div><div class="sk" style="height:8px;margin-top:24px"></div></div>
+  </section>
 
-  <section class="charts">
+  <section class="charts anim" style="animation-delay:.15s">
     <div class="panel">
-      <h2>Gelen vs Kargolanan — Son 7 Gün
+      <h2><span class="htitle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Gelen vs Kargolanan — Son 7 Gün</span>
         <span class="legend"><i class="lg-recv"></i>Gelen<span class="sep"></span><i class="lg-ship"></i>Kargolanan</span>
       </h2>
       <div class="chartwrap" id="chartFlow"></div>
     </div>
     <div class="panel">
-      <h2>Açık Kuyruk Trendi — Son 7 Gün <span class="count" id="backlogNow">—</span></h2>
+      <h2><span class="htitle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M19 9l-5 5-4-4-4 4"/></svg>Açık Kuyruk Trendi — Son 7 Gün</span> <span class="count" id="backlogNow">—</span></h2>
       <div class="chartwrap" id="chartBacklog"></div>
     </div>
   </section>
 
-  <section class="panels">
+  <section class="panels anim" style="animation-delay:.2s">
     <div class="panel">
-      <h2>⏰ Gecikmede / Bugün Terminli — Trendyol <span class="count" id="delayCount">0</span></h2>
+      <h2><span class="htitle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>Gecikmede / Bugün Terminli — Trendyol</span> <span class="count" id="delayCount">0</span></h2>
       <div class="scroll">
         <table>
-          <thead><tr><th>Sipariş No</th><th>Durum</th><th>Termin</th><th class="num">Adet</th></tr></thead>
+          <thead><tr><th>Sipariş</th><th>Durum</th><th>Termin</th><th class="num">Adet</th></tr></thead>
           <tbody id="delayBody"></tbody>
         </table>
       </div>
     </div>
 
     <div class="panel">
-      <h2>🔴 Acil Etiketli — Shopify <span class="count" id="urgentCount">0</span></h2>
+      <h2><span class="htitle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Acil Etiketli — Shopify</span> <span class="count" id="urgentCount">0</span></h2>
       <div class="scroll">
         <table>
           <thead><tr><th>Sipariş</th><th>Müşteri</th><th>Alınma</th></tr></thead>
@@ -229,24 +343,48 @@
     </div>
   </div>
 
+  <div class="tip" id="tip" hidden></div>
+
   <script>
-    const fmtDate = (ts) => {
-      if (!ts) return '—';
-      const d = new Date(ts);
-      return d.toLocaleDateString('tr-TR', { day: '2-digit', month: 'short', timeZone: 'Europe/Istanbul' });
-    };
     const fmtDateTime = (iso) => {
       if (!iso) return '—';
       return new Date(iso).toLocaleString('tr-TR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Istanbul' });
     };
-    // Termin: tarih + saat (ms timestamp)
     const fmtDeadline = (ts) => {
       if (!ts) return '—';
       return new Date(ts).toLocaleString('tr-TR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Istanbul' });
     };
+    const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    const nz = (v) => (typeof v === 'number' ? v : 0);
+    const boxIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>`;
+    const icClock = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>`;
 
-    let metricMode = 'units'; // default: ürün adedi | 'orders' = sipariş adedi
+    // KPI ikonları
+    const IC = {
+      in: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`,
+      ship: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>`,
+      open: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>`,
+    };
+
+    let metricMode = 'units';
     let lastData = null;
+
+    function splitBar(ty, sh) {
+      const tot = ty + sh;
+      const tp = tot > 0 ? (ty / tot) * 100 : 0;
+      const sp = tot > 0 ? (sh / tot) * 100 : 0;
+      const faded = 'color-mix(in srgb, var(--c), transparent 60%)';
+      return `<div class="split">
+        <div class="split__bar">
+          <i style="width:${tp}%; background:var(--c)"></i>
+          <i style="width:${sp}%; background:${faded}"></i>
+        </div>
+        <div class="split__leg">
+          <span><i style="background:var(--c)"></i>Trendyol <b>${ty}</b></span>
+          <span><i style="background:${faded}"></i>Shopify <b>${sh}</b></span>
+        </div>
+      </div>`;
+    }
 
     function renderKpis(d) {
       lastData = d;
@@ -254,39 +392,43 @@
       const rt = d.trendyol || {}, sh = d.shopify || {};
       const units = metricMode === 'units';
       const unit = units ? 'ürün' : 'sipariş';
+      const K = units ? 'Units' : 'Today';
 
-      // toplam metrik değeri (mode'a göre sipariş sayısı ya da ürün adedi)
-      const received = units ? (t.receivedUnits || 0) : (t.receivedToday || 0);
-      const shipped = units ? (t.shippedUnits || 0) : (t.shippedToday || 0);
-      const remaining = units ? (t.openUnits || 0) : (t.openTotal || 0);
+      const received = units ? nz(t.receivedUnits) : nz(t.receivedToday);
+      const shipped = units ? nz(t.shippedUnits) : nz(t.shippedToday);
+      const remaining = units ? nz(t.openUnits) : nz(t.openTotal);
       const pct = received > 0 ? Math.min(100, Math.round((shipped / received) * 100)) : 0;
-      // platform kırılımı (mode'a göre ...Units ya da ...Today alanını seçer)
-      const bd = (o, k) => { const v = units ? o[k + 'Units'] : o[k + 'Today']; return v ?? '–'; };
+      const net = shipped - received;
+      const netCls = net >= 0 ? 'pos' : 'neg';
 
-      document.getElementById('kpis').innerHTML = `
-        <div class="kpi accent">
-          <div class="label">Bugün Gelen</div>
-          <div class="value">${received}<span class="vunit">${unit}</span></div>
-          <div class="breakdown">
-            <span>Trendyol <b>${bd(rt, 'received')}</b></span>
-            <span>Shopify <b>${bd(sh, 'received')}</b></span>
+      const kpis = document.getElementById('kpis');
+      kpis.classList.remove('skel');
+      kpis.innerHTML = `
+        <article class="kpi accent">
+          <div class="kpi__top"><span class="kpi__label">Bugün Gelen</span><span class="kpi__icon">${IC.in}</span></div>
+          <div class="kpi__value">${received}<span class="kpi__unit">${unit}</span></div>
+          <div class="kpi__spacer"></div>
+          ${splitBar(nz(rt['received' + K]), nz(sh['received' + K]))}
+        </article>
+        <article class="kpi good">
+          <div class="kpi__top"><span class="kpi__label">Bugün Kargoya Verilen</span><span class="kpi__icon">${IC.ship}</span></div>
+          <div class="kpi__value">${shipped}<span class="kpi__unit">${unit}</span></div>
+          <div class="kpi__spacer"></div>
+          ${splitBar(nz(rt['shipped' + K]), nz(sh['shipped' + K]))}
+          <div class="prog">
+            <div class="prog__bar"><i style="width:${pct}%"></i></div>
+            <div class="prog__foot">
+              <span class="txt">Gelenlerin <b>%${pct}</b>'i kargolandı</span>
+              <span class="netchip ${netCls}">Net ${net >= 0 ? '+' : ''}${net}</span>
+            </div>
           </div>
-        </div>
-        <div class="kpi good">
-          <div class="label">Bugün Kargoya Verilen</div>
-          <div class="value">${shipped}<span class="vunit">${unit}</span></div>
-          <div class="breakdown">
-            <span>Trendyol <b>${bd(rt, 'shipped')}</b></span>
-            <span>Shopify <b>${bd(sh, 'shipped')}</b></span>
-          </div>
-          <div class="bar"><i style="width:${pct}%"></i></div>
-          <div class="sub" style="margin-top:8px">Bugün gelenlerin <b>%${pct}</b>'i kargolandı</div>
-        </div>
-        <div class="kpi remaining">
-          <div class="label">Açık · Kargolanmamış</div>
-          <div class="value">${remaining}<span class="vunit">${unit}</span></div>
-          <div class="sub">Bekleyen tüm Trendyol siparişi (bugün gelenler dahil)</div>
-        </div>`;
+        </article>
+        <article class="kpi remaining">
+          <div class="kpi__top"><span class="kpi__label">Açık · Kargolanmamış</span><span class="kpi__icon">${IC.open}</span></div>
+          <div class="kpi__value">${remaining}<span class="kpi__unit">${unit}</span></div>
+          <div class="kpi__spacer"></div>
+          <div class="kpi__note">Bekleyen tüm Trendyol siparişi (bugün gelenler dahil). Kuyruk trendi için alttaki grafiğe bak.</div>
+        </article>`;
     }
 
     document.getElementById('metricToggle').addEventListener('click', (e) => {
@@ -295,13 +437,21 @@
       metricMode = btn.dataset.mode;
       document.querySelectorAll('#metricToggle button').forEach((b) =>
         b.classList.toggle('active', b.dataset.mode === metricMode));
-      if (lastData) { renderKpis(lastData); renderHistory(lastData.history); } // anında güncelle
+      if (lastData) { renderKpis(lastData); renderHistory(lastData.history); }
     });
 
-    // --- Alt grafikler (son 7 gün) ---
+    // ---------- Alt grafikler ----------
     const histDayLabel = (dateStr) =>
-      new Date(dateStr + 'T12:00:00+03:00')
-        .toLocaleDateString('tr-TR', { day: '2-digit', month: 'short', timeZone: 'Europe/Istanbul' });
+      new Date(dateStr + 'T12:00:00+03:00').toLocaleDateString('tr-TR', { day: '2-digit', month: 'short', timeZone: 'Europe/Istanbul' });
+
+    function niceTicks(max) {
+      if (max <= 0) return [0];
+      const step = Math.pow(10, Math.floor(Math.log10(max)));
+      const s = max / step > 5 ? step : max / step > 2 ? step / 2 : step / 5;
+      const ticks = [];
+      for (let v = 0; v <= max + s * .001; v += s) ticks.push(Math.round(v));
+      return ticks;
+    }
 
     function renderHistory(series) {
       series = series || [];
@@ -316,37 +466,48 @@
       if (!rows.length) { el.innerHTML = `<div class="chart-note">Veri yok</div>`; return; }
       const maxV = Math.max(1, ...rows.flatMap((r) => [r.recv || 0, r.ship || 0]));
 
-      const W = 720, H = 250, padL = 10, padR = 10, padT = 22, padB = 56;
+      const W = 720, H = 258, padL = 34, padR = 12, padT = 20, padB = 58;
       const plotH = H - padT - padB, plotW = W - padL - padR, baseY = padT + plotH;
       const groupW = plotW / rows.length;
-      const barW = Math.min(24, groupW * 0.28);
-      const gap = 5;
+      const barW = Math.min(22, groupW * 0.26), gap = 6;
+      const yAt = (v) => baseY - (v / maxV) * plotH;
 
-      let bars = '', labels = '', nets = '';
-      const bar = (val, xLeft, color) => {
+      const ticks = niceTicks(maxV);
+      let grid = ticks.map((v) => `<line x1="${padL}" y1="${yAt(v)}" x2="${W - padR}" y2="${yAt(v)}" stroke="var(--border)" stroke-opacity="${v === 0 ? 1 : .5}" stroke-width="1"/>
+        <text x="${padL - 8}" y="${yAt(v) + 4}" text-anchor="end" font-size="10.5" fill="var(--ink-3)">${v}</text>`).join('');
+
+      let bars = '', labels = '', nets = '', hits = '';
+      const bar = (val, xLeft, grad) => {
         if (val == null) return '';
-        const h = (val / maxV) * plotH, y = baseY - h;
-        return `<rect x="${xLeft}" y="${y}" width="${barW}" height="${Math.max(0, h)}" rx="4" fill="${color}"/>`
-          + `<text x="${xLeft + barW / 2}" y="${y - 5}" text-anchor="middle" font-size="12" font-weight="700" fill="var(--ink-2)">${val}</text>`;
+        const y = yAt(val), h = baseY - y;
+        return `<rect x="${xLeft}" y="${y}" width="${barW}" height="${Math.max(0, h)}" rx="4" fill="url(#${grad})"/>`
+          + `<text x="${xLeft + barW / 2}" y="${y - 6}" text-anchor="middle" font-size="11.5" font-weight="700" fill="var(--ink-2)">${val}</text>`;
       };
       rows.forEach((r, i) => {
         const cx = padL + groupW * (i + 0.5);
-        bars += bar(r.recv, cx - barW - gap / 2, 'var(--accent)');
-        bars += bar(r.ship, cx + gap / 2, 'var(--good)');
-        labels += `<text x="${cx}" y="${baseY + 16}" text-anchor="middle" font-size="12" fill="var(--ink-3)">${histDayLabel(r.date)}</text>`;
+        bars += bar(r.recv, cx - barW - gap / 2, 'gRecv');
+        bars += bar(r.ship, cx + gap / 2, 'gShip');
+        labels += `<text x="${cx}" y="${baseY + 17}" text-anchor="middle" font-size="11.5" fill="var(--ink-3)">${histDayLabel(r.date)}</text>`;
+        let netTxt = '—', netInfo = 'veri yok';
         if (r.recv != null && r.ship != null) {
           const net = r.ship - r.recv, pos = net >= 0;
-          nets += `<text x="${cx}" y="${baseY + 36}" text-anchor="middle" font-size="13" font-weight="800" fill="${pos ? 'var(--good)' : 'var(--critical)'}">${pos ? '+' : ''}${net}</text>`;
+          nets += `<text x="${cx}" y="${baseY + 37}" text-anchor="middle" font-size="12.5" font-weight="800" fill="${pos ? 'var(--good)' : 'var(--critical)'}">${pos ? '+' : ''}${net}</text>`;
+          netInfo = `Net ${pos ? '+' : ''}${net}`;
         } else {
-          nets += `<text x="${cx}" y="${baseY + 36}" text-anchor="middle" font-size="12" fill="var(--ink-3)">—</text>`;
+          nets += `<text x="${cx}" y="${baseY + 37}" text-anchor="middle" font-size="12" fill="var(--ink-3)">—</text>`;
         }
+        const tip = `<div class='tt'>${histDayLabel(r.date)}</div><div class='tr'><i style='background:var(--accent)'></i>Gelen <b>${r.recv ?? '—'}</b></div><div class='tr'><i style='background:var(--good)'></i>Kargolanan <b>${r.ship ?? '—'}</b></div><div class='tr' style='margin-top:2px;color:var(--ink-3)'>${netInfo}</div>`;
+        hits += `<rect x="${cx - groupW / 2}" y="${padT}" width="${groupW}" height="${plotH}" fill="transparent" data-tip="${esc(tip)}"/>`;
       });
 
       el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Gelen ve kargolanan, son 7 gün">
-        <line x1="${padL}" y1="${baseY}" x2="${W - padR}" y2="${baseY}" stroke="var(--border)" stroke-width="1"/>
-        ${bars}${labels}${nets}
+        <defs>
+          <linearGradient id="gRecv" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6fb2ff"/><stop offset="1" stop-color="#3f82e0"/></linearGradient>
+          <linearGradient id="gShip" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4fd6a0"/><stop offset="1" stop-color="#2ba677"/></linearGradient>
+        </defs>
+        ${grid}${bars}${labels}${nets}${hits}
       </svg>
-      <div class="chart-note" style="padding:2px 0 0">Net = kargolanan − gelen · <b style="color:var(--good)">+</b> gelenden fazla çıktı · <b style="color:var(--critical)">−</b> kuyruk büyüdü</div>`;
+      <div class="chart-note" style="padding:4px 0 0">Net = kargolanan − gelen · <b style="color:var(--good)">+</b> gelenden fazla çıktı · <b style="color:var(--critical)">−</b> kuyruk büyüdü</div>`;
     }
 
     function renderBacklog(series) {
@@ -357,78 +518,117 @@
       const now = pts.length ? pts[pts.length - 1].v : null;
       document.getElementById('backlogNow').textContent = now != null ? `${now} ${unit}` : '—';
 
-      const W = 720, H = 250, padL = 40, padR = 16, padT = 22, padB = 40;
+      const W = 720, H = 258, padL = 40, padR = 16, padT = 20, padB = 42;
       const plotH = H - padT - padB, plotW = W - padL - padR, baseY = padT + plotH;
       const n = series.length;
       const xAt = (i) => padL + (plotW * (i + 0.5)) / n;
-      const xlabels = series.map((r, i) => `<text x="${xAt(i)}" y="${baseY + 16}" text-anchor="middle" font-size="12" fill="var(--ink-3)">${histDayLabel(r.date)}</text>`).join('');
+      const xlabels = series.map((r, i) => `<text x="${xAt(i)}" y="${baseY + 17}" text-anchor="middle" font-size="11.5" fill="var(--ink-3)">${histDayLabel(r.date)}</text>`).join('');
 
       if (pts.length < 2) {
         let dot = '';
         if (pts.length === 1) {
           const p = pts[0];
-          dot = `<circle cx="${xAt(p.i)}" cy="${padT + plotH / 2}" r="5" fill="var(--warning)"/>
-            <text x="${xAt(p.i)}" y="${padT + plotH / 2 - 12}" text-anchor="middle" font-size="13" font-weight="700" fill="var(--ink-2)">${p.v}</text>`;
+          dot = `<circle cx="${xAt(p.i)}" cy="${padT + plotH / 2}" r="6" fill="var(--warning)"/>
+            <text x="${xAt(p.i)}" y="${padT + plotH / 2 - 14}" text-anchor="middle" font-size="13" font-weight="800" fill="var(--ink)">${p.v}</text>`;
         }
-        el.innerHTML = `<svg viewBox="0 0 ${W} ${H}">
-          <line x1="${padL}" y1="${baseY}" x2="${W - padR}" y2="${baseY}" stroke="var(--border)"/>
-          ${xlabels}${dot}
-        </svg>
+        el.innerHTML = `<svg viewBox="0 0 ${W} ${H}"><line x1="${padL}" y1="${baseY}" x2="${W - padR}" y2="${baseY}" stroke="var(--border)"/>${xlabels}${dot}</svg>
         <div class="chart-note">Kuyruk trendi her gün bir nokta ekler — veri birikiyor. Birkaç gün sonra 7 günlük eğri oluşacak.</div>`;
         return;
       }
 
       const vals = pts.map((p) => p.v);
       let lo = Math.min(...vals), hi = Math.max(...vals);
-      const padv = Math.max(4, Math.round((hi - lo) * 0.2));
+      const padv = Math.max(4, Math.round((hi - lo) * 0.25));
       lo = Math.max(0, lo - padv); hi = hi + padv;
       const yAt = (v) => padT + plotH - ((v - lo) / (hi - lo || 1)) * plotH;
 
+      const gridVals = [lo, Math.round((lo + hi) / 2), hi];
+      const grid = gridVals.map((v) => `<line x1="${padL}" y1="${yAt(v)}" x2="${W - padR}" y2="${yAt(v)}" stroke="var(--border)" stroke-opacity=".5"/>
+        <text x="${padL - 8}" y="${yAt(v) + 4}" text-anchor="end" font-size="10.5" fill="var(--ink-3)">${v}</text>`).join('');
+
       const line = pts.map((p, k) => `${k ? 'L' : 'M'}${xAt(p.i).toFixed(1)} ${yAt(p.v).toFixed(1)}`).join(' ');
-      const area = `M${xAt(pts[0].i).toFixed(1)} ${baseY} ` +
-        pts.map((p) => `L${xAt(p.i).toFixed(1)} ${yAt(p.v).toFixed(1)}`).join(' ') +
-        ` L${xAt(pts[pts.length - 1].i).toFixed(1)} ${baseY} Z`;
-      const dots = pts.map((p) => `<circle cx="${xAt(p.i)}" cy="${yAt(p.v)}" r="4.5" fill="var(--warning)" stroke="var(--surface)" stroke-width="2"/>
-        <text x="${xAt(p.i)}" y="${yAt(p.v) - 10}" text-anchor="middle" font-size="12" font-weight="700" fill="var(--ink-2)">${p.v}</text>`).join('');
+      const area = `M${xAt(pts[0].i).toFixed(1)} ${baseY} ` + pts.map((p) => `L${xAt(p.i).toFixed(1)} ${yAt(p.v).toFixed(1)}`).join(' ') + ` L${xAt(pts[pts.length - 1].i).toFixed(1)} ${baseY} Z`;
+      const dots = pts.map((p) => {
+        const tip = `<div class='tt'>${histDayLabel(p.date)}</div><div class='tr'><i style='background:var(--warning)'></i>Açık kuyruk <b>${p.v} ${unit}</b></div>`;
+        return `<circle cx="${xAt(p.i)}" cy="${yAt(p.v)}" r="4.5" fill="var(--warning)" stroke="var(--surface)" stroke-width="2.5"/>
+          <text x="${xAt(p.i)}" y="${yAt(p.v) - 11}" text-anchor="middle" font-size="11.5" font-weight="700" fill="var(--ink-2)">${p.v}</text>
+          <circle cx="${xAt(p.i)}" cy="${yAt(p.v)}" r="16" fill="transparent" data-tip="${esc(tip)}"/>`;
+      }).join('');
 
       el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Açık kuyruk trendi son 7 gün">
-        <line x1="${padL}" y1="${baseY}" x2="${W - padR}" y2="${baseY}" stroke="var(--border)"/>
-        <text x="${padL - 6}" y="${yAt(hi) + 4}" text-anchor="end" font-size="11" fill="var(--ink-3)">${hi}</text>
-        <text x="${padL - 6}" y="${yAt(lo) + 4}" text-anchor="end" font-size="11" fill="var(--ink-3)">${lo}</text>
-        <path d="${area}" fill="var(--warning)" fill-opacity="0.13"/>
+        <defs><linearGradient id="gArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--warning)" stop-opacity=".28"/><stop offset="1" stop-color="var(--warning)" stop-opacity="0"/></linearGradient></defs>
+        ${grid}
+        <path d="${area}" fill="url(#gArea)"/>
         <path d="${line}" fill="none" stroke="var(--warning)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
         ${dots}${xlabels}
       </svg>`;
     }
 
-    const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-    const boxIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>`;
+    // tooltip (grafiklerde hover)
+    const tip = document.getElementById('tip');
+    function bindTips(el) {
+      el.addEventListener('mousemove', (e) => {
+        const h = e.target.closest('[data-tip]');
+        if (!h) { tip.hidden = true; return; }
+        tip.innerHTML = h.getAttribute('data-tip');
+        tip.hidden = false;
+        tip.style.left = e.clientX + 'px';
+        tip.style.top = (e.clientY - 14) + 'px';
+      });
+      el.addEventListener('mouseleave', () => { tip.hidden = true; });
+    }
+    bindTips(document.getElementById('chartFlow'));
+    bindTips(document.getElementById('chartBacklog'));
 
+    // ---------- Gecikme tablosu ----------
     let delayedList = [];
     function renderDelayed(list) {
       delayedList = list || [];
       list = delayedList;
       const body = document.getElementById('delayBody');
-      document.getElementById('delayCount').textContent = list.length;
-      document.getElementById('delayCount').className = 'count' + (list.length ? ' alert' : '');
+      const cnt = document.getElementById('delayCount');
+      cnt.textContent = list.length;
+      cnt.className = 'count' + (list.some((o) => o.overdue) ? ' alert' : '');
       if (!list.length) { body.innerHTML = `<tr><td colspan="4"><div class="empty">Gecikmede sipariş yok 🎉</div></td></tr>`; return; }
       body.innerHTML = list.map((o, i) => `
         <tr>
-          <td>${esc(o.orderNumber)}${o.customer ? `<span class="cust">${esc(o.customer)}</span>` : ''}</td>
-          <td>${esc(o.status || '—')}</td>
-          <td><span class="tag ${o.overdue ? 'critical' : 'warning'}">${o.overdue ? 'Gecikmiş' : 'Bugün'} · ${fmtDeadline(o.deadline)}</span></td>
-          <td class="qty num" data-index="${i}" title="Ürün detayını gör"><span class="q">${o.quantity || 0}${boxIcon}</span></td>
+          <td><span class="oid">${esc(o.orderNumber)}</span>${o.customer ? `<span class="cust">${esc(o.customer)}</span>` : ''}</td>
+          <td><span class="status-pill">${esc(o.status || '—')}</span></td>
+          <td><span class="tag ${o.overdue ? 'critical' : 'warning'}">${icClock}${o.overdue ? 'Gecikmiş' : 'Bugün'} · ${fmtDeadline(o.deadline)}</span></td>
+          <td class="qty num" data-index="${i}" title="Ürün detayını gör"><span class="q"><span class="qn">${o.quantity || 0}</span>${boxIcon}</span></td>
         </tr>`).join('');
     }
 
-    // --- Ürün detay pop-up'ı ---
+    // ---------- Acil tablosu ----------
+    let urgentList = [];
+    function renderUrgent(list, configured) {
+      const body = document.getElementById('urgentBody');
+      const cnt = document.getElementById('urgentCount');
+      if (!configured) {
+        cnt.textContent = '—'; cnt.className = 'count';
+        body.innerHTML = `<tr><td colspan="3"><div class="empty">Shopify henüz bağlanmadı</div></td></tr>`;
+        return;
+      }
+      urgentList = list || [];
+      list = urgentList;
+      cnt.textContent = list.length;
+      cnt.className = 'count' + (list.length ? ' alert' : '');
+      if (!list.length) { body.innerHTML = `<tr><td colspan="3"><div class="empty">Acil etiketli açık sipariş yok</div></td></tr>`; return; }
+      body.innerHTML = list.map((o, i) => `
+        <tr>
+          <td><span class="tag acil">ACİL</span> <span class="oid">${esc(o.name)}</span><button class="prodbtn" data-index="${i}" title="Ürün detayını gör">${boxIcon}</button></td>
+          <td>${esc(o.customer || '—')}</td>
+          <td>${fmtDateTime(o.createdAt)}</td>
+        </tr>`).join('');
+    }
+
+    // ---------- Ürün detay pop-up ----------
     const modalBack = document.getElementById('modalBack');
     function openProductModal(o) {
       const items = o.items || [];
       const totalQty = o.quantity != null ? o.quantity : items.reduce((s, it) => s + (it.quantity || 0), 0);
       document.getElementById('modalTitle').textContent = 'Sipariş ' + (o.orderNumber || o.name || '');
-      const bits = [o.customer, o.status, 'Toplam ' + totalQty + ' adet'].filter(Boolean);
-      document.getElementById('modalSub').textContent = bits.join(' · ');
+      document.getElementById('modalSub').textContent = [o.customer, o.status, 'Toplam ' + totalQty + ' adet'].filter(Boolean).join(' · ');
       document.getElementById('modalBody').innerHTML = items.length
         ? items.map((it) => {
             const meta = [
@@ -437,74 +637,38 @@
               it.variant ? `<span><b>Varyant:</b> ${esc(it.variant)}</span>` : '',
               it.sku ? `<span><b>SKU:</b> ${esc(it.sku)}</span>` : '',
             ].filter(Boolean).join('');
-            return `<div class="item">
-              <div class="qbadge">${it.quantity}×</div>
-              <div>
-                <div class="pname">${esc(it.name)}</div>
-                ${meta ? `<div class="pmeta">${meta}</div>` : ''}
-              </div>
-            </div>`;
+            return `<div class="item"><div class="qbadge">${it.quantity}×</div><div><div class="pname">${esc(it.name)}</div>${meta ? `<div class="pmeta">${meta}</div>` : ''}</div></div>`;
           }).join('')
         : `<div class="empty">Bu sipariş için ürün ayrıntısı yok</div>`;
       modalBack.classList.add('open');
     }
     function closeProductModal() { modalBack.classList.remove('open'); }
-
     document.getElementById('delayBody').addEventListener('click', (e) => {
-      const cell = e.target.closest('td.qty');
-      if (!cell) return;
-      const o = delayedList[Number(cell.dataset.index)];
-      if (o) openProductModal(o);
+      const cell = e.target.closest('td.qty'); if (!cell) return;
+      const o = delayedList[Number(cell.dataset.index)]; if (o) openProductModal(o);
+    });
+    document.getElementById('urgentBody').addEventListener('click', (e) => {
+      const btn = e.target.closest('.prodbtn'); if (!btn) return;
+      const o = urgentList[Number(btn.dataset.index)]; if (o) openProductModal(o);
     });
     document.getElementById('modalClose').addEventListener('click', closeProductModal);
     modalBack.addEventListener('click', (e) => { if (e.target === modalBack) closeProductModal(); });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeProductModal(); });
 
-    let urgentList = [];
-    function renderUrgent(list, configured) {
-      const body = document.getElementById('urgentBody');
-      if (!configured) {
-        document.getElementById('urgentCount').textContent = '—';
-        body.innerHTML = `<tr><td colspan="3"><div class="empty">Shopify henüz bağlanmadı</div></td></tr>`;
-        return;
-      }
-      urgentList = list || [];
-      list = urgentList;
-      document.getElementById('urgentCount').textContent = list.length;
-      document.getElementById('urgentCount').className = 'count' + (list.length ? ' alert' : '');
-      if (!list.length) { body.innerHTML = `<tr><td colspan="3"><div class="empty">Acil etiketli açık sipariş yok</div></td></tr>`; return; }
-      body.innerHTML = list.map((o, i) => `
-        <tr>
-          <td><span class="tag acil">ACİL</span> ${esc(o.name)}<button class="prodbtn" data-index="${i}" title="Ürün detayını gör">${boxIcon}</button></td>
-          <td>${esc(o.customer || '—')}</td>
-          <td>${fmtDateTime(o.createdAt)}</td>
-        </tr>`).join('');
-    }
-
-    document.getElementById('urgentBody').addEventListener('click', (e) => {
-      const btn = e.target.closest('.prodbtn');
-      if (!btn) return;
-      const o = urgentList[Number(btn.dataset.index)];
-      if (o) openProductModal(o);
-    });
-
+    // ---------- Mesajlar ----------
+    const icInfo = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>`;
     function renderMessages(d) {
       const box = document.getElementById('messages');
       let html = '';
-      if (!d.configured.shopify) html += `<div class="notice">Shopify henüz bağlanmadı — üstteki Shopify sayıları ve alt tablo boş görünecek. Token eklenince otomatik dolacak.</div>`;
-      if (!d.configured.trendyol) html += `<div class="notice">Trendyol henüz bağlanmadı — anahtarları ekleyin.</div>`;
-      for (const e of (d.errors || [])) html += `<div class="err">${e}</div>`;
+      if (!d.configured.shopify) html += `<div class="banner notice">${icInfo}<span>Shopify henüz bağlanmadı — Shopify sayıları ve alt tablo boş görünecek.</span></div>`;
+      if (!d.configured.trendyol) html += `<div class="banner notice">${icInfo}<span>Trendyol henüz bağlanmadı — anahtarları ekleyin.</span></div>`;
+      for (const e of (d.errors || [])) html += `<div class="banner err">${icInfo}<span>${esc(e)}</span></div>`;
       box.innerHTML = html;
     }
 
-    let lastOk = 0;
-    let refreshTimer = null;
-    // Sunucudan gelen refreshSeconds'a göre bir sonraki yenilemeyi planlar.
-    // Değer değişirse (ör. REFRESH_SECONDS güncellenince) aralık kendini ayarlar.
-    function scheduleNext() {
-      clearTimeout(refreshTimer);
-      refreshTimer = setTimeout(refresh, window.__refreshMs || 60000);
-    }
+    // ---------- Yenileme döngüsü ----------
+    let lastOk = 0, refreshTimer = null;
+    function scheduleNext() { clearTimeout(refreshTimer); refreshTimer = setTimeout(refresh, window.__refreshMs || 60000); }
     async function refresh() {
       try {
         const res = await fetch('/api/dashboard', { cache: 'no-store' });
@@ -514,27 +678,22 @@
         renderDelayed(d.trendyol?.delayed);
         renderUrgent(d.shopify?.urgent, d.configured.shopify);
         renderHistory(d.history);
-        document.getElementById('updated').textContent = 'Güncellendi ' + fmtDateTime(d.updatedAt);
+        document.getElementById('updated').textContent = 'Güncel · ' + fmtDateTime(d.updatedAt);
         lastOk = Date.now();
         document.getElementById('statusDot').className = 'dot';
         window.__refreshMs = (d.refreshSeconds || 60) * 1000;
       } catch (e) {
         document.getElementById('statusDot').className = 'dot stale';
         document.getElementById('updated').textContent = 'Bağlantı hatası — yeniden denenecek';
-      } finally {
-        scheduleNext(); // başarılı da olsa hata da olsa döngü sürsün
-      }
+      } finally { scheduleNext(); }
     }
-
     function tickClock() {
       document.getElementById('clock').textContent =
         new Date().toLocaleString('tr-TR', { weekday: 'long', hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'Europe/Istanbul' });
-      // veri bayatladıysa noktayı sarıya çevir
       if (Date.now() - lastOk > (window.__refreshMs || 60000) * 2.5)
         document.getElementById('statusDot').className = 'dot stale';
     }
-
-    refresh(); // ilk yükleme; sonraki yenilemeleri kendi içinde planlar
+    refresh();
     tickClock();
     setInterval(tickClock, 1000);
   </script>
