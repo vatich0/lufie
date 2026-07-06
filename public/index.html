@@ -354,6 +354,18 @@
       if (!ts) return '—';
       return new Date(ts).toLocaleString('tr-TR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Istanbul' });
     };
+    // Termine kalan / geçen süre (Trendyol "Kalan Süre" gibi)
+    const fmtRemaining = (ts) => {
+      if (!ts) return { text: '—', overdue: false };
+      const diff = ts - Date.now();
+      const overdue = diff < 0;
+      let s = Math.floor(Math.abs(diff) / 1000);
+      const g = Math.floor(s / 86400); s -= g * 86400;
+      const h = Math.floor(s / 3600); s -= h * 3600;
+      const m = Math.floor(s / 60);
+      const dur = g ? `${g}g ${h}s` : h ? `${h}s ${m}dk` : `${m}dk`;
+      return { text: dur + (overdue ? ' geçti' : ' kaldı'), overdue };
+    };
     const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
     const nz = (v) => (typeof v === 'number' ? v : 0);
     const boxIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>`;
@@ -590,13 +602,16 @@
       cnt.textContent = list.length;
       cnt.className = 'count' + (list.some((o) => o.overdue) ? ' alert' : '');
       if (!list.length) { body.innerHTML = `<tr><td colspan="4"><div class="empty">Gecikmede sipariş yok 🎉</div></td></tr>`; return; }
-      body.innerHTML = list.map((o, i) => `
+      body.innerHTML = list.map((o, i) => {
+        const rem = fmtRemaining(o.deadline);
+        return `
         <tr>
           <td><span class="oid">${esc(o.orderNumber)}</span>${o.customer ? `<span class="cust">${esc(o.customer)}</span>` : ''}</td>
           <td><span class="status-pill">${esc(o.status || '—')}</span></td>
-          <td><span class="tag ${o.overdue ? 'critical' : 'warning'}">${icClock}${o.overdue ? 'Gecikmiş' : 'Bugün'} · ${fmtDeadline(o.deadline)}</span></td>
+          <td><span class="tag ${rem.overdue ? 'critical' : 'warning'}" title="Termin: ${fmtDeadline(o.deadline)}">${icClock}${rem.text}</span></td>
           <td class="qty num" data-index="${i}" title="Ürün detayını gör"><span class="q"><span class="qn">${o.quantity || 0}</span>${boxIcon}</span></td>
-        </tr>`).join('');
+        </tr>`;
+      }).join('');
     }
 
     // ---------- Acil tablosu ----------
