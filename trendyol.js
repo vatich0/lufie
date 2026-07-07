@@ -150,10 +150,16 @@ export async function getTrendyolMetrics() {
   const todayKey = istanbulDateKey(now);
   const todayRecv = recvByKey.get(todayKey) || { orders: 0, units: 0 };
 
-  // 2) Kargoya verilenler: son 15 gün Shipped, güncelleme tarihi bugün olanlar bugün kargolanmış
+  // 2) Bugün kargoya verilenler: son 15 gündeki Shipped siparişlerden, GERÇEK kargolama anı
+  //    (packageHistories'daki "Shipped" olayı) bugüne düşenler. lastModifiedDate yanıltıcıydı —
+  //    önceden kargolanıp bugün sadece kargo takip güncellemesi alan siparişleri de sayıyordu.
   const shippedAll = await fetchRange({ status: 'Shipped', since: nowMs - 15 * DAY, until: nowMs });
+  const shipEventTime = (o) => {
+    const ev = (o.packageHistories || []).filter((h) => h.status === 'Shipped').map((h) => h.createdDate);
+    return ev.length ? Math.max(...ev) : 0;
+  };
   const shippedTodayOrders = shippedAll.filter((o) => {
-    const ts = o.lastModifiedDate || o.originShipmentDate || 0;
+    const ts = shipEventTime(o);
     return ts >= todayStart && ts <= todayEnd;
   });
 
@@ -186,8 +192,8 @@ export async function getTrendyolMetrics() {
         items: productLines(o),
       };
     })
-    // En eski sipariş en üstte (en uzun bekleyen = en acil)
-    .sort((a, b) => a.orderedAt - b.orderedAt);
+    // Önce termini en yakın/geçmiş (en acil), eşit terminde en eski geliş üstte
+    .sort((a, b) => (a.deadline - b.deadline) || (a.orderedAt - b.orderedAt));
 
   const sumQty = (arr) => arr.reduce((s, o) => s + totalQty(o), 0);
 
