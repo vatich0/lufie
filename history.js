@@ -31,8 +31,10 @@ const EMPTY = (date) => ({
 
 // Tek okuma-yaz döngüsünde:
 //  - bugünün tam kaydını (gelen/kargolanan/açık) günceller
-//  - receivedByDay ile geçmiş günlerin "gelen" değerlerini (geç-)doldurur
-export async function updateHistory({ today, receivedByDay }) {
+//  - receivedByDay + shippedByDay ile geçmiş günlerin "gelen"/"kargolanan"ını (geç-)doldurur
+//    (bunlar API'den yeniden hesaplanabildiği için snapshot kaybolsa da geri gelir).
+//    Sadece "açık kuyruk" geri-hesaplanamaz; o yalnızca günlük snapshot'tan gelir.
+export async function updateHistory({ today, receivedByDay, shippedByDay }) {
   const rows = await read();
   const byDate = new Map(rows.map((r) => [r.date, r]));
 
@@ -44,7 +46,15 @@ export async function updateHistory({ today, receivedByDay }) {
     byDate.set(d.date, row);
   }
 
-  // 2) Bugünün tam snapshot'ı (gelen + kargolanan + açık kuyruk)
+  // 2) Geçmiş günlerin KARGOLANAN değerini API'den doldur (Shipped olay gününe göre)
+  for (const d of shippedByDay || []) {
+    const row = byDate.get(d.date) || EMPTY(d.date);
+    row.shippedOrders = d.orders;
+    row.shippedUnits = d.units;
+    byDate.set(d.date, row);
+  }
+
+  // 3) Bugünün tam snapshot'ı (açık kuyruk dahil — bu tek geri-hesaplanamayan alan)
   if (today) {
     const row = byDate.get(today.date) || EMPTY(today.date);
     Object.assign(row, today);

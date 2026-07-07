@@ -150,18 +150,36 @@ export async function getTrendyolMetrics() {
   const todayKey = istanbulDateKey(now);
   const todayRecv = recvByKey.get(todayKey) || { orders: 0, units: 0 };
 
-  // 2) Bugün kargoya verilenler: son 15 gündeki Shipped siparişlerden, GERÇEK kargolama anı
-  //    (packageHistories'daki "Shipped" olayı) bugüne düşenler. lastModifiedDate yanıltıcıydı —
-  //    önceden kargolanıp bugün sadece kargo takip güncellemesi alan siparişleri de sayıyordu.
-  const shippedAll = await fetchRange({ status: 'Shipped', since: nowMs - 15 * DAY, until: nowMs });
+  // 2) Kargoya verilenler — GERÇEK kargolama anına (packageHistories 'Shipped' olayı) göre,
+  //    son N güne göre gruplu. Böylece grafik verisi API'den yeniden hesaplanabilir (snapshot
+  //    kaybolsa bile geri gelir). Kargolanan siparişler sonradan Delivered'a geçtiği için
+  //    Shipped + Delivered statülerini tarayıp Shipped olay gününe göre kovalarız.
   const shipEventTime = (o) => {
     const ev = (o.packageHistories || []).filter((h) => h.status === 'Shipped').map((h) => h.createdDate);
     return ev.length ? Math.max(...ev) : 0;
   };
-  const shippedTodayOrders = shippedAll.filter((o) => {
-    const ts = shipEventTime(o);
-    return ts >= todayStart && ts <= todayEnd;
-  });
+  const shipByNo = new Map();
+  for (const status of ['Shipped', 'Delivered']) {
+    const orders = await fetchRange({ status, since: rangeStart, until: nowMs });
+    for (const o of orders) shipByNo.set(o.orderNumber || o.id, o);
+  }
+  const shipByKey = new Map();
+  for (const o of shipByNo.values()) {
+    const t = shipEventTime(o);
+    if (!t) continue;
+    const key = istanbulDateKey(t);
+    if (!validKey.has(key)) continue;
+    const b = shipByKey.get(key) || { orders: 0, units: 0 };
+    b.orders += 1;
+    b.units += activeQty(o);
+    shipByKey.set(key, b);
+  }
+  const shippedByDay = dayKeys.map((date) => ({
+    date,
+    orders: shipByKey.get(date)?.orders || 0,
+    units: shipByKey.get(date)?.units || 0,
+  }));
+  const todayShip = shipByKey.get(todayKey) || { orders: 0, units: 0 };
 
   // 3) Henüz kargolanmamış TÜM açık siparişler — kuyruk + gecikme hesabı
   const openOrders = [];
@@ -201,8 +219,9 @@ export async function getTrendyolMetrics() {
     receivedToday: todayRecv.orders,
     receivedUnits: todayRecv.units,
     receivedByDay,
-    shippedToday: shippedTodayOrders.length,
-    shippedUnits: sumQty(shippedTodayOrders),
+    shippedToday: todayShip.orders,
+    shippedUnits: todayShip.units,
+    shippedByDay,
     openTotal: openOrders.length,
     openUnits: sumQty(openOrders),
     delayed,

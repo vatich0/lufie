@@ -135,17 +135,22 @@ async function buildDashboard() {
           openUnits: result.totals.openUnits,
         }
       : null;
-    // gün bazında gelen kırılımını Trendyol + Shopify birleştir
-    const merged = new Map();
-    for (const src of [rt.receivedByDay, sh.receivedByDay]) {
-      for (const d of src || []) {
-        const m = merged.get(d.date) || { date: d.date, orders: 0, units: 0 };
-        m.orders += d.orders || 0;
-        m.units += d.units || 0;
-        merged.set(d.date, m);
+    // gün bazında gelen/kargolanan kırılımlarını Trendyol + Shopify birleştir (grafik geri-hesaplanabilir)
+    const mergeByDay = (srcs) => {
+      const m = new Map();
+      for (const src of srcs) for (const d of src || []) {
+        const e = m.get(d.date) || { date: d.date, orders: 0, units: 0 };
+        e.orders += d.orders || 0;
+        e.units += d.units || 0;
+        m.set(d.date, e);
       }
-    }
-    await updateHistory({ today, receivedByDay: [...merged.values()] });
+      return [...m.values()];
+    };
+    await updateHistory({
+      today,
+      receivedByDay: mergeByDay([rt.receivedByDay, sh.receivedByDay]),
+      shippedByDay: mergeByDay([rt.shippedByDay, sh.shippedByDay]),
+    });
   } catch (e) {
     result.errors.push(`Geçmiş kaydı: ${e.message}`);
   }

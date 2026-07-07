@@ -115,24 +115,31 @@ export async function getShopifyMetrics() {
   const receivedToday = todayRecv.orders;
   const receivedUnits = todayRecv.units;
 
-  // 2) Bugün kargolanan (fulfillment tarihi bugün) — kaç sipariş ve kaç ürün kargo çıktı
-  //    Shopify'da tam fulfillment tarihi filtresi yok; bugün güncellenen ve kargolanmış siparişleri baz alıyoruz.
-  const shippedRes = await shopifyGet(
-    `/orders.json?status=any&fulfillment_status=shipped&updated_at_min=${encodeURIComponent(todayStartISO)}&limit=250&fields=id,name,fulfillments`
+  // 2) Kargolanan — fulfillment (kargo) tarihine göre, SON N gün güne göre gruplu.
+  //    Böylece grafik verisi API'den yeniden hesaplanabilir (snapshot kaybolsa geri gelir).
+  const shipSinceISO = istanbulDayStart(addDays(now, -(days - 1))).toISOString();
+  const shippedOrders = await fetchAllOrders(
+    `status=any&fulfillment_status=shipped&updated_at_min=${encodeURIComponent(shipSinceISO)}&limit=250&fields=id,fulfillments`
   );
-  const shippedOrders = (await shippedRes.json()).orders || [];
-  let shippedToday = 0;
-  let shippedUnits = 0;
+  const shipDayOrders = new Map(); // gün anahtarı -> Set(sipariş id) (aynı gün mükerrer saymamak için)
+  const shipDayUnits = new Map(); // gün anahtarı -> ürün adedi
   for (const o of shippedOrders) {
-    const todaysFulfillments = (o.fulfillments || []).filter((f) => {
-      const ts = new Date(f.created_at).getTime();
-      return ts >= dayStart && ts <= dayEnd;
-    });
-    if (todaysFulfillments.length) {
-      shippedToday += 1;
-      for (const f of todaysFulfillments) shippedUnits += lineUnits(f.line_items);
+    for (const f of o.fulfillments || []) {
+      const key = istanbulDateKey(new Date(f.created_at).getTime());
+      if (!validKey.has(key)) continue;
+      if (!shipDayOrders.has(key)) shipDayOrders.set(key, new Set());
+      shipDayOrders.get(key).add(o.id);
+      shipDayUnits.set(key, (shipDayUnits.get(key) || 0) + lineUnits(f.line_items));
     }
   }
+  const shippedByDay = dayKeys.map((date) => ({
+    date,
+    orders: shipDayOrders.get(date)?.size || 0,
+    units: shipDayUnits.get(date) || 0,
+  }));
+  const todayShipKey = istanbulDateKey(now);
+  const shippedToday = shipDayOrders.get(todayShipKey)?.size || 0;
+  const shippedUnits = shipDayUnits.get(todayShipKey) || 0;
 
   // 3) Kargolanmamış (unfulfilled) açık siparişler — SON 30 GÜN.
   //    Hem toplam açık kuyruğu (sipariş + ürün) sayarız, hem "acil" etiketlileri listeleriz.
@@ -178,7 +185,7 @@ export async function getShopifyMetrics() {
   }
   urgent.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
 
-  return { receivedToday, receivedUnits, receivedByDay, shippedToday, shippedUnits, openTotal: openOrders, openUnits, urgent };
+  return { receivedToday, receivedUnits, receivedByDay, shippedToday, shippedUnits, shippedByDay, openTotal: openOrders, openUnits, urgent };
 }
 
 // Belirli tarih aralığında (created_at) gelen siparişlerin ürün satırlarını döndürür.
