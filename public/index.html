@@ -226,6 +226,25 @@
       padding: 3px 5px; margin-left: 8px; vertical-align: middle; border-radius: 7px; line-height: 0; transition: color .12s, background .12s; }
     .prodbtn svg { width: 15px; height: 15px; }
     .prodbtn:hover { color: var(--accent); background: var(--surface-2); }
+    .ucount { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--ink-2); margin-left: 4px; }
+    .ucount small { color: var(--ink-3); font-weight: 600; font-size: .82em; margin-left: 2px; }
+
+    /* "Hazırlanıyor" satır vurgusu */
+    tbody tr.prepared td { background: rgba(234,176,74,.12); }
+    tbody tr.prepared:hover td { background: rgba(234,176,74,.18); }
+    tbody tr.prepared td:first-child { box-shadow: inset 3px 0 0 var(--warning); }
+    .prep-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700;
+      color: #f0bd63; background: color-mix(in srgb, var(--warning), transparent 85%); padding: 2px 8px;
+      border-radius: 999px; margin-left: 8px; }
+
+    /* modal "Hazırlanıyor" checkbox */
+    .prepcheck { display: inline-flex; align-items: center; gap: 10px; margin-top: 14px; cursor: pointer;
+      background: var(--surface-2); border: 1px solid var(--border); padding: 9px 15px; border-radius: 11px;
+      font-size: 14px; font-weight: 700; color: var(--ink-2); user-select: none; transition: all .12s; }
+    .prepcheck:hover { border-color: var(--border-hi); }
+    .prepcheck input { width: 19px; height: 19px; accent-color: var(--warning); cursor: pointer; margin: 0; }
+    .prepcheck.on { background: color-mix(in srgb, var(--warning), transparent 86%);
+      border-color: color-mix(in srgb, var(--warning), transparent 55%); color: #f0bd63; }
 
     /* ---------- Tooltip ---------- */
     .tip { position: fixed; z-index: 80; pointer-events: none; transform: translate(-50%, -100%);
@@ -336,6 +355,7 @@
         <div>
           <h3 id="modalTitle">Sipariş</h3>
           <div class="msub" id="modalSub"></div>
+          <label class="prepcheck" id="prepLabel"><input type="checkbox" id="prepCheck" /> <span>Hazırlanıyor</span></label>
         </div>
         <button class="mclose" id="modalClose" aria-label="Kapat">×</button>
       </div>
@@ -370,6 +390,12 @@
     const nz = (v) => (typeof v === 'number' ? v : 0);
     const boxIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>`;
     const icClock = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>`;
+
+    // "Hazırlanıyor" işaretli siparişler (bu cihazda kalıcı — localStorage)
+    let prepared = new Set();
+    try { prepared = new Set(JSON.parse(localStorage.getItem('lufie_prepared') || '[]')); } catch {}
+    const savePrepared = () => { try { localStorage.setItem('lufie_prepared', JSON.stringify([...prepared])); } catch {} };
+    const prepBadge = `<span class="prep-badge">${icClock}Hazırlanıyor</span>`;
 
     // KPI ikonları
     const IC = {
@@ -605,13 +631,17 @@
       cnt.textContent = list.length;
       cnt.className = 'count' + (list.some((o) => o.overdue) ? ' alert' : '');
       if (!list.length) { body.innerHTML = `<tr><td colspan="4"><div class="empty">Gecikmede sipariş yok 🎉</div></td></tr>`; return; }
-      body.innerHTML = list.map((o, i) => `
-        <tr>
-          <td><span class="oid">${esc(o.orderNumber)}</span>${o.customer ? `<span class="cust">${esc(o.customer)}</span>` : ''}</td>
+      body.innerHTML = list.map((o, i) => {
+        const key = String(o.orderNumber);
+        const on = prepared.has(key);
+        return `
+        <tr data-key="${esc(key)}" class="${on ? 'prepared' : ''}">
+          <td><span class="oid">${esc(o.orderNumber)}</span>${on ? prepBadge : ''}${o.customer ? `<span class="cust">${esc(o.customer)}</span>` : ''}</td>
           <td><span class="status-pill">${esc(o.status || '—')}</span></td>
           <td><span class="tag ${o.overdue ? 'critical' : 'warning'}" title="Termin: ${fmtDeadline(o.deadline)}">${icClock}${fmtRemaining(o.deadline).text}</span><span class="cust" style="margin-top:5px">Geliş: ${fmtDeadline(o.orderedAt)}</span></td>
           <td class="qty num" data-index="${i}" title="Ürün detayını gör"><span class="q"><span class="qn">${o.quantity || 0}</span>${boxIcon}</span></td>
-        </tr>`).join('');
+        </tr>`;
+      }).join('');
     }
 
     // ---------- Acil tablosu ----------
@@ -629,21 +659,32 @@
       cnt.textContent = list.length;
       cnt.className = 'count' + (list.length ? ' alert' : '');
       if (!list.length) { body.innerHTML = `<tr><td colspan="3"><div class="empty">Acil etiketli açık sipariş yok</div></td></tr>`; return; }
-      body.innerHTML = list.map((o, i) => `
-        <tr>
-          <td><span class="tag acil">ACİL</span> <span class="oid">${esc(o.name)}</span><button class="prodbtn" data-index="${i}" title="Ürün detayını gör">${boxIcon}</button></td>
+      body.innerHTML = list.map((o, i) => {
+        const key = String(o.name);
+        const on = prepared.has(key);
+        const q = (o.items || []).reduce((s, it) => s + (it.quantity || 0), 0);
+        return `
+        <tr data-key="${esc(key)}" class="${on ? 'prepared' : ''}">
+          <td><span class="tag acil">ACİL</span> <span class="oid">${esc(o.name)}</span><button class="prodbtn" data-index="${i}" title="Ürün detayını gör">${boxIcon}</button><span class="ucount">${q}<small>ürün</small></span>${on ? prepBadge : ''}</td>
           <td>${esc(o.customer || '—')}</td>
           <td>${fmtDateTime(o.createdAt)}</td>
-        </tr>`).join('');
+        </tr>`;
+      }).join('');
     }
 
     // ---------- Ürün detay pop-up ----------
     const modalBack = document.getElementById('modalBack');
+    const prepCheck = document.getElementById('prepCheck');
+    const prepLabel = document.getElementById('prepLabel');
+    let modalKey = '';
     function openProductModal(o) {
       const items = o.items || [];
       const totalQty = o.quantity != null ? o.quantity : items.reduce((s, it) => s + (it.quantity || 0), 0);
       document.getElementById('modalTitle').textContent = 'Sipariş ' + (o.orderNumber || o.name || '');
       document.getElementById('modalSub').textContent = [o.customer, o.status, 'Toplam ' + totalQty + ' adet'].filter(Boolean).join(' · ');
+      modalKey = String(o.orderNumber || o.name || '');
+      prepCheck.checked = prepared.has(modalKey);
+      prepLabel.classList.toggle('on', prepCheck.checked);
       document.getElementById('modalBody').innerHTML = items.length
         ? items.map((it) => {
             const meta = [
@@ -668,6 +709,25 @@
     });
     document.getElementById('modalClose').addEventListener('click', closeProductModal);
     modalBack.addEventListener('click', (e) => { if (e.target === modalBack) closeProductModal(); });
+
+    // "Hazırlanıyor" işaretini kaydet + ilgili satırı sarıya boya
+    prepCheck.addEventListener('change', () => {
+      if (!modalKey) return;
+      if (prepCheck.checked) prepared.add(modalKey); else prepared.delete(modalKey);
+      savePrepared();
+      prepLabel.classList.toggle('on', prepCheck.checked);
+      document.querySelectorAll('#delayBody tr, #urgentBody tr').forEach((tr) => {
+        if (tr.dataset.key === modalKey) {
+          tr.classList.toggle('prepared', prepCheck.checked);
+          const firstTd = tr.querySelector('td');
+          if (firstTd) {
+            const existing = firstTd.querySelector('.prep-badge');
+            if (prepCheck.checked && !existing) firstTd.querySelector('.oid')?.insertAdjacentHTML('afterend', prepBadge);
+            else if (!prepCheck.checked && existing) existing.remove();
+          }
+        }
+      });
+    });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeProductModal(); });
 
     // ---------- Mesajlar ----------
