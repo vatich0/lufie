@@ -30,31 +30,27 @@ const EMPTY = (date) => ({
 });
 
 // Tek okuma-yaz döngüsünde:
-//  - bugünün tam kaydını (gelen/kargolanan/açık) günceller
-//  - receivedByDay + shippedByDay ile geçmiş günlerin "gelen"/"kargolanan"ını (geç-)doldurur
-//    (bunlar API'den yeniden hesaplanabildiği için snapshot kaybolsa da geri gelir).
-//    Sadece "açık kuyruk" geri-hesaplanamaz; o yalnızca günlük snapshot'tan gelir.
-export async function updateHistory({ today, receivedByDay, shippedByDay }) {
+//  - bugünün tam kaydını günceller
+//  - receivedByDay + shippedByDay + openByDay ile geçmiş günlerin gelen/kargolanan/açık
+//    değerlerini (geç-)doldurur. Üçü de API'den yeniden hesaplanabildiği için, snapshot
+//    (Railway redeploy'da) silinse bile grafik verisi geri gelir.
+export async function updateHistory({ today, receivedByDay, shippedByDay, openByDay }) {
   const rows = await read();
   const byDate = new Map(rows.map((r) => [r.date, r]));
 
-  // 1) Geçmiş günlerin GELEN değerini API'den doldur (varsa üzerine yazar, doğrudur)
-  for (const d of receivedByDay || []) {
-    const row = byDate.get(d.date) || EMPTY(d.date);
-    row.receivedOrders = d.orders;
-    row.receivedUnits = d.units;
-    byDate.set(d.date, row);
-  }
+  const fill = (list, oKey, uKey) => {
+    for (const d of list || []) {
+      const row = byDate.get(d.date) || EMPTY(d.date);
+      row[oKey] = d.orders;
+      row[uKey] = d.units;
+      byDate.set(d.date, row);
+    }
+  };
+  fill(receivedByDay, 'receivedOrders', 'receivedUnits');
+  fill(shippedByDay, 'shippedOrders', 'shippedUnits');
+  fill(openByDay, 'openOrders', 'openUnits');
 
-  // 2) Geçmiş günlerin KARGOLANAN değerini API'den doldur (Shipped olay gününe göre)
-  for (const d of shippedByDay || []) {
-    const row = byDate.get(d.date) || EMPTY(d.date);
-    row.shippedOrders = d.orders;
-    row.shippedUnits = d.units;
-    byDate.set(d.date, row);
-  }
-
-  // 3) Bugünün tam snapshot'ı (açık kuyruk dahil — bu tek geri-hesaplanamayan alan)
+  // Bugünün tam snapshot'ı (yeniden hesaplananlarla tutarlı)
   if (today) {
     const row = byDate.get(today.date) || EMPTY(today.date);
     Object.assign(row, today);

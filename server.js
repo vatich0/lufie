@@ -150,6 +150,7 @@ async function buildDashboard() {
       today,
       receivedByDay: mergeByDay([rt.receivedByDay, sh.receivedByDay]),
       shippedByDay: mergeByDay([rt.shippedByDay, sh.shippedByDay]),
+      openByDay: mergeByDay([rt.openByDay, sh.openByDay]),
     });
   } catch (e) {
     result.errors.push(`Geçmiş kaydı: ${e.message}`);

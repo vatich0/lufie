@@ -193,6 +193,23 @@ export async function getTrendyolMetrics() {
     }
   }
 
+  // Açık kuyruğu geçmiş günler için yeniden hesapla (snapshot'a bağımlı kalmadan).
+  // Gün-sonu D'de açık = o güne kadar gelmiş (orderTime ≤ endOfD) ve o güne kadar
+  // kargolanmamış siparişler. İki kaynak: (a) hâlâ açık olanlar, (b) o gün açıktı ama
+  // sonradan kargolananlar (shipEvent > endOfD). Zaten çekilmiş veriden hesaplanır.
+  const endOfDayMs = (key) => new Date(key + 'T23:59:59.999+03:00').getTime();
+  const openByDay = dayKeys.map((date) => {
+    const endOfD = endOfDayMs(date);
+    let orders = 0, units = 0;
+    for (const o of openOrders) {
+      if (orderTime(o) <= endOfD) { orders += 1; units += totalQty(o); }
+    }
+    for (const o of shipByNo.values()) {
+      if (orderTime(o) <= endOfD && shipEventTime(o) > endOfD) { orders += 1; units += totalQty(o); }
+    }
+    return { date, orders, units };
+  });
+
   const delayed = openOrders
     .filter((o) => (o.agreedDeliveryDate || o.estimatedDeliveryDate || Infinity) <= delayThreshold)
     .map((o) => {
@@ -224,6 +241,7 @@ export async function getTrendyolMetrics() {
     shippedByDay,
     openTotal: openOrders.length,
     openUnits: sumQty(openOrders),
+    openByDay,
     delayed,
   };
 }

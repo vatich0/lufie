@@ -119,18 +119,25 @@ export async function getShopifyMetrics() {
   //    Böylece grafik verisi API'den yeniden hesaplanabilir (snapshot kaybolsa geri gelir).
   const shipSinceISO = istanbulDayStart(addDays(now, -(days - 1))).toISOString();
   const shippedOrders = await fetchAllOrders(
-    `status=any&fulfillment_status=shipped&updated_at_min=${encodeURIComponent(shipSinceISO)}&limit=250&fields=id,fulfillments`
+    `status=any&fulfillment_status=shipped&updated_at_min=${encodeURIComponent(shipSinceISO)}&limit=250&fields=id,created_at,fulfillments`
   );
   const shipDayOrders = new Map(); // gün anahtarı -> Set(sipariş id) (aynı gün mükerrer saymamak için)
   const shipDayUnits = new Map(); // gün anahtarı -> ürün adedi
+  const shippedList = []; // açık kuyruk yeniden hesabı için: {created, firstFulfill, units}
   for (const o of shippedOrders) {
+    let firstFulfill = Infinity, oUnits = 0;
     for (const f of o.fulfillments || []) {
-      const key = istanbulDateKey(new Date(f.created_at).getTime());
+      const ts = new Date(f.created_at).getTime();
+      if (ts < firstFulfill) firstFulfill = ts;
+      const u = lineUnits(f.line_items);
+      oUnits += u;
+      const key = istanbulDateKey(ts);
       if (!validKey.has(key)) continue;
       if (!shipDayOrders.has(key)) shipDayOrders.set(key, new Set());
       shipDayOrders.get(key).add(o.id);
-      shipDayUnits.set(key, (shipDayUnits.get(key) || 0) + lineUnits(f.line_items));
+      shipDayUnits.set(key, (shipDayUnits.get(key) || 0) + u);
     }
+    if (firstFulfill < Infinity) shippedList.push({ created: new Date(o.created_at).getTime(), firstFulfill, units: oUnits });
   }
   const shippedByDay = dayKeys.map((date) => ({
     date,
@@ -146,6 +153,7 @@ export async function getShopifyMetrics() {
   //    (Daha eski takılı siparişlere bakmaya gerek yok.)
   const openSinceISO = istanbulDayStart(addDays(now, -30)).toISOString();
   const urgent = [];
+  const openList = []; // açık kuyruk yeniden hesabı için: {created, units}
   let openOrders = 0;
   let openUnits = 0;
   let path =
@@ -158,7 +166,9 @@ export async function getShopifyMetrics() {
       if (o.cancelled_at) continue;
       openOrders += 1;
       // iade sonrası kalan adet (current_quantity yoksa quantity)
-      openUnits += (o.line_items || []).reduce((sum, l) => sum + ((l.current_quantity != null ? l.current_quantity : l.quantity) || 0), 0);
+      const oUnits = (o.line_items || []).reduce((sum, l) => sum + ((l.current_quantity != null ? l.current_quantity : l.quantity) || 0), 0);
+      openUnits += oUnits;
+      openList.push({ created: new Date(o.created_at).getTime(), units: oUnits });
       const tags = (o.tags || '').split(',').map((x) => x.trim().toLowerCase());
       if (tags.includes(s.urgentTag)) {
         urgent.push({
@@ -185,7 +195,18 @@ export async function getShopifyMetrics() {
   }
   urgent.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
 
-  return { receivedToday, receivedUnits, receivedByDay, shippedToday, shippedUnits, shippedByDay, openTotal: openOrders, openUnits, urgent };
+  // Açık kuyruğu geçmiş günler için yeniden hesapla (snapshot'a bağımlı kalmadan).
+  // Gün-sonu D'de açık = o güne kadar gelmiş ve o güne kadar kargolanmamış siparişler:
+  //  (a) hâlâ açık olanlar (created ≤ endOfD) + (b) o gün açıktı ama sonradan kargolananlar (firstFulfill > endOfD).
+  const openByDay = dayKeys.map((date) => {
+    const endOfD = new Date(date + 'T23:59:59.999+03:00').getTime();
+    let orders = 0, units = 0;
+    for (const o of openList) if (o.created <= endOfD) { orders += 1; units += o.units; }
+    for (const o of shippedList) if (o.created <= endOfD && o.firstFulfill > endOfD) { orders += 1; units += o.units; }
+    return { date, orders, units };
+  });
+
+  return { receivedToday, receivedUnits, receivedByDay, shippedToday, shippedUnits, shippedByDay, openTotal: openOrders, openUnits, openByDay, urgent };
 }
 
 // Belirli tarih aralığında (created_at) gelen siparişlerin ürün satırlarını döndürür.
