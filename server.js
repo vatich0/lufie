@@ -7,6 +7,7 @@ import { getTrendyolMetrics, getTrendyolLines } from './trendyol.js';
 import { getShopifyMetrics, getShopifyLines } from './shopify.js';
 import { updateHistory, getSeries } from './history.js';
 import { consolidateByColor } from './colors.js';
+import { getPrepared, togglePrepared } from './prepared.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -50,6 +51,7 @@ ${error ? `<div class="err">${esc(error)}</div>` : ''}
 }
 
 app.use(express.urlencoded({ extended: false }));
+app.use(express.json());
 
 app.get('/login', (req, res) => res.send(loginPage(null)));
 app.post('/login', (req, res) => {
@@ -215,6 +217,17 @@ app.get('/api/colors', async (req, res) => {
     errors,
     ...data,
   });
+});
+
+// "Hazırlanıyor" işaretleri — tüm cihazlarda ortak (sunucu tarafında saklanır)
+app.get('/api/prepared', async (req, res) => {
+  res.json({ keys: await getPrepared() });
+});
+app.post('/api/prepared', async (req, res) => {
+  const key = req.body?.key;
+  if (!key) return res.status(400).json({ error: 'key gerekli' });
+  const keys = await togglePrepared(String(key), Boolean(req.body?.on));
+  res.json({ keys });
 });
 
 app.get('/renkler', (req, res) => res.sendFile(path.join(__dirname, 'public', 'renkler.html')));

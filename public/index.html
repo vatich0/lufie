@@ -391,10 +391,17 @@
     const boxIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>`;
     const icClock = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>`;
 
-    // "Hazırlanıyor" işaretli siparişler (bu cihazda kalıcı — localStorage)
+    // "Hazırlanıyor" işaretli siparişler — sunucuda saklanır, tüm cihazlarda ortak
     let prepared = new Set();
-    try { prepared = new Set(JSON.parse(localStorage.getItem('lufie_prepared') || '[]')); } catch {}
-    const savePrepared = () => { try { localStorage.setItem('lufie_prepared', JSON.stringify([...prepared])); } catch {} };
+    async function loadPrepared() {
+      try { const r = await fetch('/api/prepared', { cache: 'no-store' }); const d = await r.json(); prepared = new Set((d.keys || []).map(String)); } catch {}
+    }
+    async function togglePreparedServer(key, on) {
+      try {
+        const r = await fetch('/api/prepared', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key, on }) });
+        const d = await r.json(); prepared = new Set((d.keys || []).map(String));
+      } catch {}
+    }
     const prepBadge = `<span class="prep-badge">${icClock}Hazırlanıyor</span>`;
 
     // KPI ikonları
@@ -713,20 +720,22 @@
     // "Hazırlanıyor" işaretini kaydet + ilgili satırı sarıya boya
     prepCheck.addEventListener('change', () => {
       if (!modalKey) return;
-      if (prepCheck.checked) prepared.add(modalKey); else prepared.delete(modalKey);
-      savePrepared();
-      prepLabel.classList.toggle('on', prepCheck.checked);
+      const on = prepCheck.checked;
+      // iyimser (anında) güncelle
+      if (on) prepared.add(modalKey); else prepared.delete(modalKey);
+      prepLabel.classList.toggle('on', on);
       document.querySelectorAll('#delayBody tr, #urgentBody tr').forEach((tr) => {
         if (tr.dataset.key === modalKey) {
-          tr.classList.toggle('prepared', prepCheck.checked);
+          tr.classList.toggle('prepared', on);
           const firstTd = tr.querySelector('td');
           if (firstTd) {
             const existing = firstTd.querySelector('.prep-badge');
-            if (prepCheck.checked && !existing) firstTd.querySelector('.oid')?.insertAdjacentHTML('afterend', prepBadge);
-            else if (!prepCheck.checked && existing) existing.remove();
+            if (on && !existing) firstTd.querySelector('.oid')?.insertAdjacentHTML('afterend', prepBadge);
+            else if (!on && existing) existing.remove();
           }
         }
       });
+      togglePreparedServer(modalKey, on); // sunucuya kaydet (tüm cihazlarda ortak)
     });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeProductModal(); });
 
@@ -748,6 +757,7 @@
       try {
         const res = await fetch('/api/dashboard', { cache: 'no-store' });
         const d = await res.json();
+        await loadPrepared(); // "hazırlanıyor" işaretlerini sunucudan çek (ortak)
         renderMessages(d);
         renderKpis(d);
         renderDelayed(d.trendyol?.delayed);
